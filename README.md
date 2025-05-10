@@ -1,2 +1,2 @@
-# bot1
-봇1
+# discord_bot
+봇
