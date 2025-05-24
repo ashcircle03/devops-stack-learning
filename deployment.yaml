@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: discord-bot
+  labels:
+    app: discord-bot
 spec:
   replicas: 1
   selector:
@@ -14,13 +16,16 @@ spec:
     spec:
       containers:
       - name: discord-bot
-        image: discord-bot:v3
+        image: ${DOCKER_REGISTRY}/${DOCKER_CREDENTIALS_USR}/${DOCKER_IMAGE}:${BUILD_NUMBER}
+        imagePullPolicy: Always
         env:
         - name: BOT_TOKEN
           valueFrom:
             secretKeyRef:
               name: discord-bot-secret
-              key: BOT_TOKEN
+              key: bot-token
+      imagePullSecrets:
+      - name: dockerhub-secret
   strategy:
     type: RollingUpdate
     rollingUpdate:
