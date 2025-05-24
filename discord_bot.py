@@ -2,6 +2,8 @@ import os
 import discord
 from discord.ext import commands
 import random
+import datetime
+import pytz
 
 # 봇 토큰 환경 변수에서 가져오기
 TOKEN = os.environ['BOT_TOKEN']
@@ -105,6 +107,15 @@ async def cool(ctx):
 async def _bot(ctx):
     """Is the bot cool?"""
     await ctx.send('Yes, the bot is cool.')
+
+
+# 현재 시간을 보여주는 명령어
+@bot.command()
+async def time(ctx):
+    """Shows the current time in Korea."""
+    korea_tz = pytz.timezone('Asia/Seoul')
+    current_time = datetime.datetime.now(korea_tz)
+    await ctx.send(f'현재 한국 시간: {current_time.strftime("%Y-%m-%d %H:%M:%S %Z")}')
 
 
 # 봇 실행 (직접 실행될 때만)
