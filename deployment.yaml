@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: discord-bot
-        image: ${DOCKER_REGISTRY}/${DOCKER_CREDENTIALS_USR}/${DOCKER_IMAGE}:${BUILD_NUMBER}
+        image: docker.io/ashcircle03/discord-bot:11
         imagePullPolicy: Always
         env:
         - name: BOT_TOKEN
