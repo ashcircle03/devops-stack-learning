@@ -8,6 +8,7 @@ pipeline {
         GITHUB_CREDENTIALS = credentials('github')
         KUBECONFIG = credentials('kubeconfig')
         BOT_TOKEN = credentials('discord-bot-token')
+        VENV_PATH = "${WORKSPACE}/venv"
     }
     
     stages {
@@ -17,10 +18,21 @@ pipeline {
             }
         }
         
+        stage('Setup Python') {
+            steps {
+                sh '''
+                    python3 -m venv ${VENV_PATH}
+                    . ${VENV_PATH}/bin/activate
+                    python3 -m pip install --upgrade pip
+                    python3 -m pip install -r requirements.txt
+                '''
+            }
+        }
+        
         stage('Run Tests') {
             steps {
                 sh '''
-                    python3 -m pip install -r requirements.txt
+                    . ${VENV_PATH}/bin/activate
                     python3 -m pytest test_discord_bot.py
                 '''
             }
@@ -52,28 +64,7 @@ pipeline {
                     
                     git add deployment.yaml
                     git commit -m "Update deployment image to build #$BUILD_NUMBER"
-                    git push https://$GITHUB_CREDENTIALS_USR:$GITHUB_CREDENTIALS_PSW@github.com/$GITHUB_CREDENTIALS_USR/project1.git HEAD:main
-                '''
-            }
-        }
-        
-        stage('Prepare Kubernetes') {
-            steps {
-                sh '''
-                    export KUBECONFIG=$KUBECONFIG
-                    
-                    # Create Docker registry secret
-                    kubectl create secret docker-registry dockerhub-secret \
-                        --docker-server=$DOCKER_REGISTRY \
-                        --docker-username=$DOCKER_CREDENTIALS_USR \
-                        --docker-password=$DOCKER_CREDENTIALS_PSW \
-                        --docker-email=jenkins@example.com \
-                        -o yaml --dry-run=client | kubectl apply -f -
-                    
-                    # Create Discord bot token secret
-                    kubectl create secret generic discord-bot-secret \
-                        --from-literal=bot-token=$BOT_TOKEN \
-                        -o yaml --dry-run=client | kubectl apply -f -
+                    git push https://$GITHUB_CREDENTIALS_USR:$GITHUB_CREDENTIALS_PSW@github.com/$GITHUB_CREDENTIALS_USR/discord_bot.git HEAD:main
                 '''
             }
         }
@@ -81,7 +72,9 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                    export KUBECONFIG=$KUBECONFIG
+                    mkdir -p ~/.kube
+                    cat $KUBECONFIG > ~/.kube/config
+                    chmod 600 ~/.kube/config
                     kubectl apply -f deployment.yaml
                     kubectl rollout status deployment/discord-bot
                 '''
@@ -95,10 +88,11 @@ pipeline {
         }
         failure {
             sh '''
-                export KUBECONFIG=$KUBECONFIG
-                kubectl logs -l app=discord-bot --tail=100
-                kubectl describe deployment discord-bot
-                kubectl describe pods -l app=discord-bot
+                if [ -f ~/.kube/config ]; then
+                    kubectl logs -l app=discord-bot --tail=100 || true
+                    kubectl describe deployment discord-bot || true
+                    kubectl describe pods -l app=discord-bot || true
+                fi
             '''
         }
     }
