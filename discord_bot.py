@@ -44,7 +44,10 @@ async def on_ready():
     # Wavelink 노드 연결
     nodes = [wavelink.Node(
         uri='http://lavalink.default.svc.cluster.local:2333',
-        password='youshallnotpass'
+        password='youshallnotpass',
+        search_only=False,
+        rest_uri='http://lavalink.default.svc.cluster.local:2333',
+        name='default-node'
     )]
     await wavelink.Pool.connect(nodes=nodes, client=bot, cache_capacity=100)
 
@@ -223,7 +226,7 @@ async def play(ctx, *, query: str):
         
         # YouTube 검색으로 변경
         if not query.startswith(('http://', 'https://')):
-            query = f'ytmsearch:{query}'  # YouTube Music 검색으로 변경
+            query = f'ytsearch:{query}'  # 일반 YouTube 검색으로 변경
             
         tracks: wavelink.Search = await wavelink.Playable.search(query)
         
@@ -236,15 +239,29 @@ async def play(ctx, *, query: str):
             added: int = await player.queue.put_wait(tracks)
             await ctx.send(f"✅ 플레이리스트 **`{tracks.name}`** ({added}곡)을 큐에 추가했습니다.")
         else:
-            # 단일 트랙인 경우
-            track: wavelink.Playable = tracks[0]
-            await player.queue.put_wait(track)
-            await ctx.send(f"✅ **`{track.title}`** by **`{track.author}`**을 큐에 추가했습니다.")
+            if tracks:
+                # 첫 번째 트랙만 사용
+                track: wavelink.Playable = tracks[0]
+                await player.queue.put_wait(track)
+                await ctx.send(f"✅ **`{track.title}`** by **`{track.author}`**을 큐에 추가했습니다.")
+            else:
+                await ctx.send("❌ 음악을 찾을 수 없습니다. 다른 검색어를 시도해보세요.")
+                return
 
         if not player.playing:
             # 현재 재생 중이 아니면 바로 재생
-            await player.play(player.queue.get(), volume=30)
-            
+            try:
+                await player.play(player.queue.get(), volume=30)
+            except wavelink.exceptions.NodeException as e:
+                await ctx.send("❌ 음악 서버와의 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.")
+                print(f"Node connection error: {str(e)}")
+            except wavelink.exceptions.TrackLoadException as e:
+                await ctx.send("❌ 음악을 찾을 수 없습니다. 다른 검색어를 시도해보세요.")
+                print(f"Track load error: {str(e)}")
+            except Exception as e:
+                await ctx.send(f"❌ 음악 검색/재생 중 오류가 발생했습니다: {str(e)}")
+                print(f"Error in play command: {str(e)}")
+
     except Exception as e:
         await ctx.send(f"❌ 음악 검색/재생 중 오류가 발생했습니다: {str(e)}")
         print(f"Error in play command: {str(e)}")

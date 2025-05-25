@@ -51,4 +51,5 @@ data:
           useInnertubeMusicPlaylist: true
           useInnertubeMusicChannel: true
           useInnertubeMusicVideo: true
-          useInnertubeMusicMix: true 
+          useInnertubeMusicMix: true
+          apiKey: ${YOUTUBE_API_KEY} 
