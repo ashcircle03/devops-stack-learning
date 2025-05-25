@@ -132,37 +132,6 @@ async def time(ctx):
     await ctx.send(f'현재 한국 시간: {current_time.strftime("%Y-%m-%d %H:%M:%S %Z")}')
 
 
-# 날씨 정보를 보여주는 명령어
-@bot.command()
-async def weather(ctx, city: str):
-    """Shows the current weather for a city."""
-    try:
-        # OpenWeatherMap API 호출
-        url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric&lang=kr"
-        response = requests.get(url)
-        data = response.json()
-
-        if response.status_code == 200:
-            # 날씨 정보 추출
-            temp = data['main']['temp']
-            feels_like = data['main']['feels_like']
-            humidity = data['main']['humidity']
-            weather_desc = data['weather'][0]['description']
-            wind_speed = data['wind']['speed']
-
-            # 임베드 생성
-            embed = discord.Embed(title=f"{city}의 날씨", color=discord.Color.blue())
-            embed.add_field(name="온도", value=f"{temp}°C", inline=True)
-            embed.add_field(name="체감 온도", value=f"{feels_like}°C", inline=True)
-            embed.add_field(name="습도", value=f"{humidity}%", inline=True)
-            embed.add_field(name="날씨", value=weather_desc, inline=True)
-            embed.add_field(name="풍속", value=f"{wind_speed}m/s", inline=True)
-            
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send(f"도시 '{city}'를 찾을 수 없습니다.")
-    except Exception as e:
-        await ctx.send(f"날씨 정보를 가져오는 중 오류가 발생했습니다: {str(e)}")
 
 
 # 음성 채널에 참가하는 명령어
