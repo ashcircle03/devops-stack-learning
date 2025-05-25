@@ -27,13 +27,13 @@ pipeline {
                         variable: 'BOT_TOKEN'
                     )
                 ]) {
-                    sh '''
+                sh '''
                         echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
                         docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} --build-arg BOT_TOKEN=$BOT_TOKEN .
                         docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
                         docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG}
-                        docker logout
-                    '''
+                    docker logout
+                '''
                 }
             }
         }
@@ -46,20 +46,20 @@ pipeline {
                     echo "Updated deployment.yaml with new image: $NEW_IMAGE"
                     cat deployment.yaml
                 '''
-            }
-        }
-        
+                    }
+                }
+
         stage('Deploy to Kubernetes') {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
-                    sh '''
+                sh '''
                         mkdir -p $HOME/.kube
                         cp $KUBECONFIG $HOME/.kube/config
                         chmod 600 $HOME/.kube/config
                         
                         echo "Deploying to Kubernetes..."
                         kubectl apply -f deployment.yaml --insecure-skip-tls-verify
-                    '''
+                '''
                 }
             }
         }

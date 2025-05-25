@@ -51,12 +51,12 @@ async def on_ready():
 # 명령어 실행 전/후 처리
 @bot.before_invoke
 async def before_invoke(ctx):
-    ctx.start_time = time.time()
+    ctx._start_time = time.time()
 
 @bot.after_invoke
 async def after_invoke(ctx):
-    if hasattr(ctx, 'start_time'):
-        latency = time.time() - ctx.start_time
+    if hasattr(ctx, '_start_time'):
+        latency = time.time() - ctx._start_time
         MESSAGE_LATENCY.observe(latency)
         COMMAND_COUNTER.labels(command=ctx.command.name).inc()
 
