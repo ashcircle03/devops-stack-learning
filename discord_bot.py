@@ -6,6 +6,7 @@ import datetime
 import pytz
 import wavelink
 from prometheus_client import start_http_server, Counter, Gauge, Histogram
+from typing import cast
 
 # 프로메테우스 메트릭 정의
 COMMAND_COUNTER = Counter('discord_bot_commands_total', 'Total number of commands executed', ['command'])
@@ -41,25 +42,43 @@ async def on_ready():
     # 프로메테우스 메트릭 서버 시작
     start_http_server(8000)
     # Wavelink 노드 연결
-    node = wavelink.Node(
-        uri='http://lavalink.default.svc.cluster.local:2333',  # 전체 서비스 DNS 이름 사용
+    nodes = [wavelink.Node(
+        uri='http://lavalink.default.svc.cluster.local:2333',
         password='youshallnotpass'
-    )
-    await wavelink.Pool.connect(client=bot, nodes=[node])
+    )]
+    await wavelink.Pool.connect(nodes=nodes, client=bot, cache_capacity=100)
+
+@bot.event
+async def on_wavelink_node_ready(payload: wavelink.NodeReadyEventPayload) -> None:
+    print(f"Wavelink Node connected: {payload.node} | Resumed: {payload.resumed}")
+
+@bot.event
+async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload) -> None:
+    player: wavelink.Player | None = payload.player
+    if not player:
+        return
+
+    track: wavelink.Playable = payload.track
+    embed: discord.Embed = discord.Embed(title="Now Playing")
+    embed.description = f"**{track.title}** by `{track.author}`"
+
+    if track.artwork:
+        embed.set_image(url=track.artwork)
+
+    if track.album.name:
+        embed.add_field(name="Album", value=track.album.name)
+
+    await player.home.send(embed=embed)
 
 # 명령어 실행 전/후 처리
 @bot.before_invoke
 async def before_invoke(ctx):
-    # time 모듈을 직접 import
     import time
-    # 시작 시간을 ctx 객체에 저장
     setattr(ctx, '_start_time', time.time())
 
 @bot.after_invoke
 async def after_invoke(ctx):
-    # time 모듈을 직접 import
     import time
-    # 시작 시간이 있으면 지연시간 계산
     if hasattr(ctx, '_start_time'):
         latency = time.time() - getattr(ctx, '_start_time')
         MESSAGE_LATENCY.observe(latency)
@@ -153,101 +172,106 @@ async def join(ctx):
         await ctx.send("먼저 음성 채널에 참가해주세요!")
         return
     
-    channel = ctx.author.voice.channel
-    if ctx.voice_client is None:
-        await channel.connect(cls=wavelink.Player)
+    try:
+        player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
+        player.home = ctx.channel
         VOICE_CONNECTIONS.inc()
-        await ctx.send(f"{channel.name}에 참가했습니다!")
-    else:
-        await ctx.voice_client.move_to(channel)
-        await ctx.send(f"{channel.name}로 이동했습니다!")
+        await ctx.send(f"{ctx.author.voice.channel.name}에 참가했습니다!")
+    except Exception as e:
+        await ctx.send(f"음성 채널 참가 중 오류가 발생했습니다: {str(e)}")
 
 
 # 음성 채널에서 나가는 명령어
-@bot.command()
-async def leave(ctx):
+@bot.command(aliases=["dc"])
+async def disconnect(ctx):
     """봇을 음성 채널에서 나가게 합니다."""
-    if ctx.voice_client is None:
+    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
+    if not player:
         await ctx.send("봇이 음성 채널에 없습니다!")
         return
     
-    await ctx.voice_client.disconnect()
+    await player.disconnect()
     VOICE_CONNECTIONS.dec()
-    await ctx.send("음성 채널에서 나갔습니다!")
+    await ctx.message.add_reaction("✅")
 
 
 # 음악을 재생하는 명령어
 @bot.command()
 async def play(ctx, *, query: str):
     """YouTube에서 음악을 검색하고 재생합니다."""
-    if ctx.voice_client is None:
-        await ctx.send("먼저 `?join` 명령어로 봇을 음성 채널에 참가시켜주세요!")
+    if not ctx.guild:
         return
+
+    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
+    if not player:
+        try:
+            player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
+            player.home = ctx.channel
+        except AttributeError:
+            await ctx.send("먼저 음성 채널에 참가해주세요!")
+            return
+        except discord.ClientException:
+            await ctx.send("음성 채널 참가에 실패했습니다. 다시 시도해주세요.")
+            return
+
+    # 자동 재생 활성화
+    player.autoplay = wavelink.AutoPlayMode.enabled
 
     # 검색 결과 가져오기
-    tracks = await wavelink.Playable.search(query)
+    tracks: wavelink.Search = await wavelink.Playable.search(query)
     if not tracks:
-        await ctx.send("검색 결과가 없습니다!")
+        await ctx.send(f"{ctx.author.mention} - 검색 결과가 없습니다. 다시 시도해주세요.")
         return
 
-    # 첫 번째 결과 재생
-    track = tracks[0]
-    player = ctx.voice_client
-    
-    if player.is_playing():
-        player.stop()
-    
-    await player.play(track)
-    await ctx.send(f"🎵 재생 중: {track.title}")
+    if isinstance(tracks, wavelink.Playlist):
+        # 플레이리스트인 경우
+        added: int = await player.queue.put_wait(tracks)
+        await ctx.send(f"플레이리스트 **`{tracks.name}`** ({added}곡)을 큐에 추가했습니다.")
+    else:
+        # 단일 트랙인 경우
+        track: wavelink.Playable = tracks[0]
+        await player.queue.put_wait(track)
+        await ctx.send(f"**`{track}`**을 큐에 추가했습니다.")
 
+    if not player.playing:
+        # 현재 재생 중이 아니면 바로 재생
+        await player.play(player.queue.get(), volume=30)
 
 # 재생 중인 음악을 일시정지하는 명령어
-@bot.command()
-async def pause(ctx):
-    """재생 중인 음악을 일시정지합니다."""
-    if ctx.voice_client is None:
+@bot.command(name="toggle", aliases=["pause", "resume"])
+async def pause_resume(ctx):
+    """재생 중인 음악을 일시정지하거나 다시 재생합니다."""
+    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
+    if not player:
         await ctx.send("봇이 음성 채널에 없습니다!")
         return
     
-    if not ctx.voice_client.is_playing():
-        await ctx.send("현재 재생 중인 음악이 없습니다!")
-        return
-    
-    await ctx.voice_client.pause()
-    await ctx.send("⏸️ 일시정지")
-
-
-# 일시정지된 음악을 다시 재생하는 명령어
-@bot.command()
-async def resume(ctx):
-    """일시정지된 음악을 다시 재생합니다."""
-    if ctx.voice_client is None:
-        await ctx.send("봇이 음성 채널에 없습니다!")
-        return
-    
-    if not ctx.voice_client.is_paused():
-        await ctx.send("일시정지된 음악이 없습니다!")
-        return
-    
-    await ctx.voice_client.resume()
-    await ctx.send("▶️ 재생 재개")
-
+    await player.pause(not player.paused)
+    await ctx.message.add_reaction("✅")
 
 # 재생 중인 음악을 중지하는 명령어
 @bot.command()
-async def stop(ctx):
-    """재생 중인 음악을 중지합니다."""
-    if ctx.voice_client is None:
+async def skip(ctx):
+    """현재 재생 중인 음악을 건너뜁니다."""
+    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
+    if not player:
         await ctx.send("봇이 음성 채널에 없습니다!")
         return
     
-    if not ctx.voice_client.is_playing():
-        await ctx.send("현재 재생 중인 음악이 없습니다!")
+    await player.skip(force=True)
+    await ctx.message.add_reaction("✅")
+
+# 볼륨 조절 명령어
+@bot.command()
+async def volume(ctx, value: int):
+    """재생 볼륨을 조절합니다 (0-100)."""
+    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
+    if not player:
+        await ctx.send("봇이 음성 채널에 없습니다!")
         return
     
-    await ctx.voice_client.stop()
-    await ctx.send("⏹️ 재생 중지")
-
+    await player.set_volume(value)
+    await ctx.message.add_reaction("✅")
 
 # 봇 실행 (직접 실행될 때만)
 if __name__ == '__main__':
