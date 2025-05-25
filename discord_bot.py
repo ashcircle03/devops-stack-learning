@@ -13,10 +13,7 @@ TOKEN = os.environ['BOT_TOKEN']
 WEATHER_API_KEY = "YOUR_API_KEY"  # OpenWeatherMap API 키를 여기에 입력하세요
 
 # 봇 설명
-description = '''An example bot to showcase the discord.ext.commands extension
-module.
-
-There are a number of utility commands being showcased here.'''
+description = '''Discord 봇 with 음성 기능과 유틸리티 명령어'''
 
 # 봇 권한 설정
 intents = discord.Intents.default()
@@ -53,33 +50,25 @@ async def add(ctx, left: int, right: int):
 # 주사위를 굴리는 명령어 (NdN 형식: N개의 N면체 주사위)
 @bot.command()
 async def roll(ctx, dice: str):
-    """Rolls a dice in NdN format."""
-    # Handle negative numbers in input
-    if dice.startswith('-'):
-        await ctx.send('Format has to be in NdN!')
-        return
-        
+    """주사위를 굴립니다. 형식: NdN (예: 2d6)"""
     try:
         rolls, limit = map(int, dice.split('d'))
-        
-        # Validate number of rolls and dice sides
         if rolls <= 0 or limit <= 0 or rolls > 100:
-            await ctx.send('Format has to be in NdN!')
+            await ctx.send('올바른 형식이 아닙니다! (예: 2d6)')
             return
-            
-        # Roll the dice and format results
         results = [random.randint(1, limit) for r in range(rolls)]
         await ctx.send(', '.join(str(r) for r in results))
-        
     except ValueError:
-        await ctx.send('Format has to be in NdN!')
-        return
+        await ctx.send('올바른 형식이 아닙니다! (예: 2d6)')
 
 
 # 여러 선택지 중 하나를 무작위로 선택하는 명령어
-@bot.command(description='For when you wanna settle the score some other way')
+@bot.command()
 async def choose(ctx, *choices: str):
-    """Chooses between multiple choices."""
+    """여러 선택지 중 하나를 무작위로 선택합니다."""
+    if not choices:
+        await ctx.send('선택지를 입력해주세요!')
+        return
     await ctx.send(random.choice(choices))
 
 
@@ -125,12 +114,10 @@ async def _bot(ctx):
 # 현재 시간을 보여주는 명령어
 @bot.command()
 async def time(ctx):
-    """Shows the current time in Korea."""
+    """현재 한국 시간을 보여줍니다."""
     korea_tz = pytz.timezone('Asia/Seoul')
     current_time = datetime.datetime.now(korea_tz)
     await ctx.send(f'현재 한국 시간: {current_time.strftime("%Y-%m-%d %H:%M:%S %Z")}')
-
-
 
 
 # 음성 채널에 참가하는 명령어
