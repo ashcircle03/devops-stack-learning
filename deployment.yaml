@@ -23,7 +23,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: discord-bot-secret
-              key: bot-token
+              key: BOT_TOKEN
       imagePullSecrets:
       - name: dockerhub-secret
   strategy:
