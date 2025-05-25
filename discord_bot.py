@@ -217,25 +217,32 @@ async def play(ctx, *, query: str):
     # 자동 재생 활성화
     player.autoplay = wavelink.AutoPlayMode.enabled
 
-    # 검색 결과 가져오기
-    tracks: wavelink.Search = await wavelink.Playable.search(query)
-    if not tracks:
-        await ctx.send(f"{ctx.author.mention} - 검색 결과가 없습니다. 다시 시도해주세요.")
-        return
+    try:
+        # 검색 결과 가져오기
+        await ctx.send(f"🔍 '{query}' 검색 중...")
+        tracks: wavelink.Search = await wavelink.Playable.search(query)
+        
+        if not tracks:
+            await ctx.send(f"❌ '{query}'에 대한 검색 결과가 없습니다.")
+            return
 
-    if isinstance(tracks, wavelink.Playlist):
-        # 플레이리스트인 경우
-        added: int = await player.queue.put_wait(tracks)
-        await ctx.send(f"플레이리스트 **`{tracks.name}`** ({added}곡)을 큐에 추가했습니다.")
-    else:
-        # 단일 트랙인 경우
-        track: wavelink.Playable = tracks[0]
-        await player.queue.put_wait(track)
-        await ctx.send(f"**`{track}`**을 큐에 추가했습니다.")
+        if isinstance(tracks, wavelink.Playlist):
+            # 플레이리스트인 경우
+            added: int = await player.queue.put_wait(tracks)
+            await ctx.send(f"✅ 플레이리스트 **`{tracks.name}`** ({added}곡)을 큐에 추가했습니다.")
+        else:
+            # 단일 트랙인 경우
+            track: wavelink.Playable = tracks[0]
+            await player.queue.put_wait(track)
+            await ctx.send(f"✅ **`{track.title}`** by **`{track.author}`**을 큐에 추가했습니다.")
 
-    if not player.playing:
-        # 현재 재생 중이 아니면 바로 재생
-        await player.play(player.queue.get(), volume=30)
+        if not player.playing:
+            # 현재 재생 중이 아니면 바로 재생
+            await player.play(player.queue.get(), volume=30)
+            
+    except Exception as e:
+        await ctx.send(f"❌ 음악 검색/재생 중 오류가 발생했습니다: {str(e)}")
+        print(f"Error in play command: {str(e)}")
 
 # 재생 중인 음악을 일시정지하는 명령어
 @bot.command(name="toggle", aliases=["pause", "resume"])
