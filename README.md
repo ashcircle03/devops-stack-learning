@@ -127,3 +127,20 @@ Jenkins 파이프라인은 다음 단계로 구성됩니다:
 ## 라이선스
 
 MIT License
+=======
+# discord_bot
+https://velog.io/@ashcircle03/series/%EB%A6%AC%EB%88%85%EC%8A%A4
+
+os: ubuntu
+
+terminal: warp, zsh
+
+ide: vsc
+
+가상화: docker, kubernetes(minikube), miniconda
+
+CI/CD: jenkins
+
+서비스: discord
+
+monitoring: Prometheus, Grafana
