@@ -185,7 +185,7 @@ async def play(ctx, *, query: str):
         return
 
     # 검색 결과 가져오기
-    tracks = await wavelink.Pool.get_node().get_tracks(query)
+    tracks = await wavelink.Playable.search(query)
     if not tracks:
         await ctx.send("검색 결과가 없습니다!")
         return
