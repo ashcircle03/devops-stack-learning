@@ -26,11 +26,11 @@ project1/
 graph TD
     A[개발자] -->|Push Code| B[GitHub]
     B -->|Webhook| C[Jenkins]
-    C -->|1. Checkout| D[소스 코드]
-    D -->|2. Build| E[Docker Image]
-    E -->|3. Push| F[Docker Hub]
-    F -->|4. Deploy| G[Kubernetes]
-    G -->|5. Run| H[Discord Bot]
+    C -->|Checkout| D[소스 코드]
+    D -->|Build| E[Docker Image]
+    E -->|Push| F[Docker Hub]
+    F -->|Deploy| G[Kubernetes]
+    G -->|Run| H[Discord Bot]
     
     subgraph "Jenkins Pipeline"
     C
