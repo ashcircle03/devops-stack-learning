@@ -4,7 +4,6 @@ from discord.ext import commands
 import random
 import datetime
 import pytz
-import requests
 import wavelink
 
 # 봇 토큰 환경 변수에서 가져오기
