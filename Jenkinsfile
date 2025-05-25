@@ -16,7 +16,7 @@ pipeline {
                 cleanWs()
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: 'refs/heads/main']],
+                    branches: [[name: 'refs/heads/master']],
                     extensions: [
                         [$class: 'CleanBeforeCheckout'],
                         [$class: 'CloneOption', depth: 1, noTags: true, reference: '', shallow: true]
