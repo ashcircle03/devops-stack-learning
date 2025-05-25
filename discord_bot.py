@@ -6,7 +6,6 @@ import datetime
 import pytz
 import wavelink
 from prometheus_client import start_http_server, Counter, Gauge, Histogram
-import time
 
 # 프로메테우스 메트릭 정의
 COMMAND_COUNTER = Counter('discord_bot_commands_total', 'Total number of commands executed', ['command'])
@@ -51,12 +50,18 @@ async def on_ready():
 # 명령어 실행 전/후 처리
 @bot.before_invoke
 async def before_invoke(ctx):
-    ctx.__dict__['_start_time'] = time.time()
+    # time 모듈을 직접 import
+    import time
+    # 시작 시간을 ctx 객체에 저장
+    setattr(ctx, '_start_time', time.time())
 
 @bot.after_invoke
 async def after_invoke(ctx):
-    if '_start_time' in ctx.__dict__:
-        latency = time.time() - ctx.__dict__['_start_time']
+    # time 모듈을 직접 import
+    import time
+    # 시작 시간이 있으면 지연시간 계산
+    if hasattr(ctx, '_start_time'):
+        latency = time.time() - getattr(ctx, '_start_time')
         MESSAGE_LATENCY.observe(latency)
         COMMAND_COUNTER.labels(command=ctx.command.name).inc()
 
