@@ -4,6 +4,9 @@ from unittest.mock import AsyncMock, patch, MagicMock
 import discord
 from discord.ext import commands
 import os
+import pytest
+import datetime
+import pytz
 
 # Patch the Discord client before importing the bot
 with patch('discord.Client.run'):
@@ -155,6 +158,24 @@ class TestDiscordBot(unittest.TestCase):
                 self.ctx.send.assert_called_once_with(f'홍길동 joined {formatted_date}')
         self.loop.run_until_complete(run_test())
 
+@pytest.mark.asyncio
+async def test_time():
+    # 가상의 컨텍스트 생성
+    ctx = MockContext()
+    
+    # time 명령어 실행
+    await bot.get_command('time').callback(ctx)
+    
+    # 응답 확인
+    assert ctx.sent_message is not None
+    assert '현재 한국 시간:' in ctx.sent_message
+    
+    # 시간 형식 확인
+    time_str = ctx.sent_message.split('현재 한국 시간: ')[1]
+    try:
+        datetime.datetime.strptime(time_str.split(' KST')[0], '%Y-%m-%d %H:%M:%S')
+    except ValueError:
+        pytest.fail("Invalid time format")
 
 if __name__ == '__main__':
     unittest.main()
