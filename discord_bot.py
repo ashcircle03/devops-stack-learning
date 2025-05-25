@@ -44,8 +44,7 @@ async def on_ready():
     # Wavelink 노드 연결
     node = wavelink.Node(
         uri='http://lavalink.default.svc.cluster.local:2333',  # 전체 서비스 DNS 이름 사용
-        password='youshallnotpass',
-        secure=False  # SSL 비활성화
+        password='youshallnotpass'
     )
     await wavelink.Pool.connect(client=bot, nodes=[node])
 
