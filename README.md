@@ -6,10 +6,8 @@ Discord 봇을 개발하고 Jenkins를 통해 CI/CD 파이프라인을 구축한
 
 ```
 project1/
-├── .git/                    # Git 저장소
 ├── requirements.txt         # Python 패키지 의존성
 ├── discord_bot.py          # Discord 봇 메인 코드
-├── lavalink/               # 음성 서버 설정
 ├── docker-compose.yml      # Docker Compose 설정
 ├── deployment.yaml         # Kubernetes 배포 설정
 ├── kubeconfig             # Kubernetes 설정
@@ -41,18 +39,14 @@ graph TD
     end
     
     subgraph "Infrastructure"
-    I[Lavalink Server]
     J[Kubernetes Cluster]
     end
     
-    H -->|Voice| I
     G -->|Deployed on| J
 ```
 
 ## 주요 기능
 
-- 음성 채널 관리 (참가/퇴장)
-- YouTube 음악 재생
 - 기본 유틸리티 명령어
   - 시간 확인
   - 주사위 굴리기
@@ -63,11 +57,10 @@ graph TD
 ## 기술 스택
 
 - **언어**: Python 3.11
-- **프레임워크**: discord.py, wavelink
+- **프레임워크**: discord.py
 - **컨테이너화**: Docker
 - **CI/CD**: Jenkins
 - **오케스트레이션**: Kubernetes
-- **음성 서버**: Lavalink
 
 ## 설치 및 실행
 
@@ -116,13 +109,12 @@ Jenkins 파이프라인은 다음 단계로 구성됩니다:
 
 ## 명령어 목록
 
-- `?join` - 봇을 음성 채널에 참가
-- `?leave` - 봇을 음성 채널에서 퇴장
-- `?play [검색어]` - YouTube에서 음악 검색 및 재생
 - `?time` - 현재 한국 시간 표시
 - `?roll [NdN]` - 주사위 굴리기
 - `?choose [선택지1] [선택지2] ...` - 선택지 중 무작위 선택
 - `?repeat [횟수] [메시지]` - 메시지 반복
+- `?add [숫자1] [숫자2]` - 두 숫자 더하기
+- `?joined [멤버]` - 멤버의 서버 참가일 확인
 
 ## 라이선스
 
