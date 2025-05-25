@@ -223,7 +223,7 @@ async def play(ctx, *, query: str):
         
         # YouTube 검색으로 변경
         if not query.startswith(('http://', 'https://')):
-            query = f'ytsearch:{query}'
+            query = f'ytmsearch:{query}'  # YouTube Music 검색으로 변경
             
         tracks: wavelink.Search = await wavelink.Playable.search(query)
         

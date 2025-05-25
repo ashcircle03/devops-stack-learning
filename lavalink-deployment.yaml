@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: lavalink
+  labels:
+    app: lavalink
 spec:
   replicas: 1
   selector:
@@ -14,9 +16,11 @@ spec:
     spec:
       containers:
       - name: lavalink
-        image: ghcr.io/lavalink-devs/lavalink:4
+        image: ghcr.io/lavalink-devs/lavalink:4.0.0
         ports:
         - containerPort: 2333
+        - containerPort: 2333
+          name: metrics
         env:
         - name: SERVER_PORT
           value: "2333"
@@ -29,15 +33,29 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "500m"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /opt/Lavalink/application.yml
+          subPath: application.yml
+      volumes:
+      - name: config-volume
+        configMap:
+          name: lavalink-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: lavalink
-spec:
-  selector:
+  labels:
     app: lavalink
+spec:
   ports:
   - port: 2333
     targetPort: 2333
+    name: lavalink
+  - port: 2333
+    targetPort: metrics
+    name: metrics
+  selector:
+    app: lavalink
   type: ClusterIP 
