@@ -220,6 +220,11 @@ async def play(ctx, *, query: str):
     try:
         # 검색 결과 가져오기
         await ctx.send(f"🔍 '{query}' 검색 중...")
+        
+        # YouTube 검색으로 변경
+        if not query.startswith(('http://', 'https://')):
+            query = f'ytsearch:{query}'
+            
         tracks: wavelink.Search = await wavelink.Playable.search(query)
         
         if not tracks:
