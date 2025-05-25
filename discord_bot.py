@@ -37,8 +37,11 @@ async def on_ready():
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     print('------')
     # Wavelink 노드 연결
-    node = wavelink.Node(uri='http://localhost:2333', password='youshallnotpass')
-    await wavelink.NodePool.connect(client=bot, nodes=[node])
+    node = wavelink.Node(
+        uri='http://localhost:2333',
+        password='youshallnotpass'
+    )
+    await wavelink.Pool.connect(client=bot, nodes=[node])
 
 
 # 두 숫자를 더하는 명령어
@@ -172,7 +175,7 @@ async def join(ctx):
     
     channel = ctx.author.voice.channel
     if ctx.voice_client is None:
-        await channel.connect()
+        await channel.connect(cls=wavelink.Player)
         await ctx.send(f"{channel.name}에 참가했습니다!")
     else:
         await ctx.voice_client.move_to(channel)
@@ -200,7 +203,7 @@ async def play(ctx, *, query: str):
         return
 
     # 검색 결과 가져오기
-    tracks = await wavelink.NodePool.get_node().get_tracks(query)
+    tracks = await wavelink.Pool.get_node().get_tracks(query)
     if not tracks:
         await ctx.send("검색 결과가 없습니다!")
         return
