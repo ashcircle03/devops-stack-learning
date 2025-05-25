@@ -4,10 +4,6 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'ashcircle03/discord-bot'
         DOCKER_TAG = "${BUILD_NUMBER}"
-        DOCKER_CREDENTIALS = credentials('dockerhub')
-        BOT_TOKEN = credentials('discord-bot-token')
-        KUBECONFIG = credentials('kubeconfig')
-        DOCKER_USERNAME = 'ashcircle03'
         KUBERNETES_API_SERVER = 'https://192.168.49.2:8443'
     }
     
@@ -62,7 +58,7 @@ pipeline {
                         chmod 600 $HOME/.kube/config
                         
                         echo "Deploying to Kubernetes..."
-                        kubectl apply -f deployment.yaml --validate=false --server=$KUBERNETES_API_SERVER --insecure-skip-tls-verify
+                        kubectl apply -f deployment.yaml --insecure-skip-tls-verify
                     '''
                 }
             }
@@ -78,8 +74,8 @@ pipeline {
                     chmod 600 $HOME/.kube/config
                     
                     echo "Checking deployment status..."
-                    kubectl get pods -l app=discord-bot --validate=false --server=$KUBERNETES_API_SERVER --insecure-skip-tls-verify || true
-                    kubectl describe deployment discord-bot --validate=false --server=$KUBERNETES_API_SERVER --insecure-skip-tls-verify || true
+                    kubectl get pods -l app=discord-bot --insecure-skip-tls-verify || true
+                    kubectl describe deployment discord-bot --insecure-skip-tls-verify || true
                 '''
             }
         }
