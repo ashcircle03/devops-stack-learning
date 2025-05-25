@@ -43,20 +43,21 @@ async def on_ready():
     start_http_server(8000)
     # Wavelink 노드 연결
     node = wavelink.Node(
-        uri='http://localhost:2333',
-        password='youshallnotpass'
+        uri='http://lavalink.default.svc.cluster.local:2333',  # 전체 서비스 DNS 이름 사용
+        password='youshallnotpass',
+        secure=False  # SSL 비활성화
     )
     await wavelink.Pool.connect(client=bot, nodes=[node])
 
 # 명령어 실행 전/후 처리
 @bot.before_invoke
 async def before_invoke(ctx):
-    ctx._start_time = time.time()
+    ctx.__dict__['_start_time'] = time.time()
 
 @bot.after_invoke
 async def after_invoke(ctx):
-    if hasattr(ctx, '_start_time'):
-        latency = time.time() - ctx._start_time
+    if '_start_time' in ctx.__dict__:
+        latency = time.time() - ctx.__dict__['_start_time']
         MESSAGE_LATENCY.observe(latency)
         COMMAND_COUNTER.labels(command=ctx.command.name).inc()
 

@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lavalink
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lavalink
+  template:
+    metadata:
+      labels:
+        app: lavalink
+    spec:
+      containers:
+      - name: lavalink
+        image: ghcr.io/lavalink-devs/lavalink:4
+        ports:
+        - containerPort: 2333
+        env:
+        - name: SERVER_PORT
+          value: "2333"
+        - name: LAVALINK_SERVER_PASSWORD
+          value: "youshallnotpass"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lavalink
+spec:
+  selector:
+    app: lavalink
+  ports:
+  - port: 2333
+    targetPort: 2333
+  type: ClusterIP 
