@@ -1,3 +1,5 @@
 discord.py
 pytest>=7.0.0
 pytz>=2024.1
+requests>=2.31.0
+wavelink>=3.2.0
