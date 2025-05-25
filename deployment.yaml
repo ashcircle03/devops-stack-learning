@@ -13,11 +13,18 @@ spec:
     metadata:
       labels:
         app: discord-bot
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
       - name: discord-bot
         image: docker.io/ashcircle03/discord-bot:29  # ← 태그(예: latest, 1, ${BUILD_NUMBER}) 반드시 명시
         imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: metrics
         env:
         - name: BOT_TOKEN
           valueFrom:

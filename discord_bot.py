@@ -5,6 +5,13 @@ import random
 import datetime
 import pytz
 import wavelink
+from prometheus_client import start_http_server, Counter, Gauge, Histogram
+import time
+
+# 프로메테우스 메트릭 정의
+COMMAND_COUNTER = Counter('discord_bot_commands_total', 'Total number of commands executed', ['command'])
+VOICE_CONNECTIONS = Gauge('discord_bot_voice_connections', 'Number of active voice connections')
+MESSAGE_LATENCY = Histogram('discord_bot_message_latency_seconds', 'Message processing latency')
 
 # 봇 토큰 환경 변수에서 가져오기
 TOKEN = os.environ['BOT_TOKEN']
@@ -32,6 +39,8 @@ voice_clients = {}
 async def on_ready():
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     print('------')
+    # 프로메테우스 메트릭 서버 시작
+    start_http_server(8000)
     # Wavelink 노드 연결
     node = wavelink.Node(
         uri='http://localhost:2333',
@@ -39,6 +48,17 @@ async def on_ready():
     )
     await wavelink.Pool.connect(client=bot, nodes=[node])
 
+# 명령어 실행 전/후 처리
+@bot.before_invoke
+async def before_invoke(ctx):
+    ctx.start_time = time.time()
+
+@bot.after_invoke
+async def after_invoke(ctx):
+    if hasattr(ctx, 'start_time'):
+        latency = time.time() - ctx.start_time
+        MESSAGE_LATENCY.observe(latency)
+        COMMAND_COUNTER.labels(command=ctx.command.name).inc()
 
 # 두 숫자를 더하는 명령어
 @bot.command()
@@ -131,6 +151,7 @@ async def join(ctx):
     channel = ctx.author.voice.channel
     if ctx.voice_client is None:
         await channel.connect(cls=wavelink.Player)
+        VOICE_CONNECTIONS.inc()
         await ctx.send(f"{channel.name}에 참가했습니다!")
     else:
         await ctx.voice_client.move_to(channel)
@@ -146,6 +167,7 @@ async def leave(ctx):
         return
     
     await ctx.voice_client.disconnect()
+    VOICE_CONNECTIONS.dec()
     await ctx.send("음성 채널에서 나갔습니다!")
 
 
