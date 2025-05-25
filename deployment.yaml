@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: discord-bot
-        image: docker.io/ashcircle03/discord-bot:26  # ← 태그(예: latest, 1, ${BUILD_NUMBER}) 반드시 명시
+        image: docker.io/ashcircle03/discord-bot:27  # ← 태그(예: latest, 1, ${BUILD_NUMBER}) 반드시 명시
         imagePullPolicy: Always
         env:
         - name: BOT_TOKEN
