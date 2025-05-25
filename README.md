@@ -2,6 +2,53 @@
 
 Discord 봇을 개발하고 Jenkins를 통해 CI/CD 파이프라인을 구축한 프로젝트입니다.
 
+## 프로젝트 구조
+
+```
+project1/
+├── .git/                    # Git 저장소
+├── requirements.txt         # Python 패키지 의존성
+├── discord_bot.py          # Discord 봇 메인 코드
+├── lavalink/               # 음성 서버 설정
+├── docker-compose.yml      # Docker Compose 설정
+├── deployment.yaml         # Kubernetes 배포 설정
+├── kubeconfig             # Kubernetes 설정
+├── Jenkinsfile            # Jenkins 파이프라인 정의
+├── jenkins-deployer-role.yaml  # Jenkins 권한 설정
+├── jenkins.Dockerfile     # Jenkins 컨테이너 설정
+├── Dockerfile             # Discord 봇 컨테이너 설정
+└── README.md              # 프로젝트 문서
+```
+
+## CI/CD 파이프라인
+
+```mermaid
+graph TD
+    A[개발자] -->|Push Code| B[GitHub]
+    B -->|Webhook| C[Jenkins]
+    C -->|1. Checkout| D[소스 코드]
+    D -->|2. Build| E[Docker Image]
+    E -->|3. Push| F[Docker Hub]
+    F -->|4. Deploy| G[Kubernetes]
+    G -->|5. Run| H[Discord Bot]
+    
+    subgraph "Jenkins Pipeline"
+    C
+    D
+    E
+    F
+    G
+    end
+    
+    subgraph "Infrastructure"
+    I[Lavalink Server]
+    J[Kubernetes Cluster]
+    end
+    
+    H -->|Voice| I
+    G -->|Deployed on| J
+```
+
 ## 주요 기능
 
 - 음성 채널 관리 (참가/퇴장)
