@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lavalink-config
+data:
+  application.yml: |
+    server:
+      port: 2333
+      address: 0.0.0.0
+    lavalink:
+      server:
+        password: "youshallnotpass"
+        sources:
+          youtube: true
+          bandcamp: true
+          soundcloud: true
+          twitch: true
+          vimeo: true
+          http: true
+          local: false
+        bufferDurationMs: 400
+        youtubePlaylistLoadLimit: 6
+        playerUpdateInterval: 5
+        youtubeSearchEnabled: true
+        soundcloudSearchEnabled: true
+        gc-warnings: true
+        metrics:
+          prometheus:
+            enabled: true
+            endpoint: /metrics
+        youtubeConfig:
+          email: ""
+          password: ""
+          httpConfig:
+            proxyUrl: ""
+          retryLimit: 3
+          searchPlaylistLimit: 6
+          mainSearchResults: 10
+          playlistLoadLimit: 6
+          filterSearchResults: true
+          useISR: true
+          useModernSearch: true
+          useInnertubeApi: true
+          useInnertubeSearch: true
+          useInnertubePlaylist: true
+          useInnertubeChannel: true
+          useInnertubeVideo: true
+          useInnertubeMix: true
+          useInnertubeMusic: true
+          useInnertubeMusicSearch: true
+          useInnertubeMusicPlaylist: true
+          useInnertubeMusicChannel: true
+          useInnertubeMusicVideo: true
+          useInnertubeMusicMix: true
+          apiKey: ${YOUTUBE_API_KEY} 

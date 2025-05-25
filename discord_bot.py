@@ -4,26 +4,54 @@ from discord.ext import commands
 import random
 import datetime
 import pytz
+<<<<<<< HEAD
 from prometheus_client import start_http_server, Counter, Gauge, Histogram
 
 # 프로메테우스 메트릭 정의
 COMMAND_COUNTER = Counter('discord_bot_commands_total', 'Total number of commands executed', ['command'])
+=======
+import wavelink
+from prometheus_client import start_http_server, Counter, Gauge, Histogram
+from typing import cast
+
+# 프로메테우스 메트릭 정의
+COMMAND_COUNTER = Counter('discord_bot_commands_total', 'Total number of commands executed', ['command'])
+VOICE_CONNECTIONS = Gauge('discord_bot_voice_connections', 'Number of active voice connections')
+>>>>>>> 8a310c285cbed1df1afb6fe8012c74108ba7c6d7
 MESSAGE_LATENCY = Histogram('discord_bot_message_latency_seconds', 'Message processing latency')
 
 # 봇 토큰 환경 변수에서 가져오기
 TOKEN = os.environ['BOT_TOKEN']
 
+<<<<<<< HEAD
 # 봇 설명
 description = '''Discord 유틸리티 봇'''
+=======
+# OpenWeatherMap API 키 (실제 API 키로 교체 필요)
+WEATHER_API_KEY = "YOUR_API_KEY"  # OpenWeatherMap API 키를 여기에 입력하세요
+
+# 봇 설명
+description = '''Discord 봇 with 음성 기능과 유틸리티 명령어'''
+>>>>>>> 8a310c285cbed1df1afb6fe8012c74108ba7c6d7
 
 # 봇 권한 설정
 intents = discord.Intents.default()
 intents.members = True  # 멤버 관련 권한 활성화
 intents.message_content = True  # 메시지 내용 읽기 권한 활성화
+<<<<<<< HEAD
+=======
+intents.voice_states = True  # 음성 상태 권한 활성화
+>>>>>>> 8a310c285cbed1df1afb6fe8012c74108ba7c6d7
 
 # 봇 객체 생성 (명령어 접두사: ?)
 bot = commands.Bot(command_prefix='?', description=description, intents=intents)
 
+<<<<<<< HEAD
+=======
+# 음성 클라이언트 딕셔너리
+voice_clients = {}
+
+>>>>>>> 8a310c285cbed1df1afb6fe8012c74108ba7c6d7
 # 봇이 준비되었을 때 실행되는 이벤트
 @bot.event
 async def on_ready():
@@ -31,6 +59,40 @@ async def on_ready():
     print('------')
     # 프로메테우스 메트릭 서버 시작
     start_http_server(8000)
+<<<<<<< HEAD
+=======
+    # Wavelink 노드 연결
+    nodes = [wavelink.Node(
+        uri='http://lavalink.default.svc.cluster.local:2333',
+        password='youshallnotpass',
+        search_only=False,
+        rest_uri='http://lavalink.default.svc.cluster.local:2333',
+        name='default-node'
+    )]
+    await wavelink.Pool.connect(nodes=nodes, client=bot, cache_capacity=100)
+
+@bot.event
+async def on_wavelink_node_ready(payload: wavelink.NodeReadyEventPayload) -> None:
+    print(f"Wavelink Node connected: {payload.node} | Resumed: {payload.resumed}")
+
+@bot.event
+async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload) -> None:
+    player: wavelink.Player | None = payload.player
+    if not player:
+        return
+
+    track: wavelink.Playable = payload.track
+    embed: discord.Embed = discord.Embed(title="Now Playing")
+    embed.description = f"**{track.title}** by `{track.author}`"
+
+    if track.artwork:
+        embed.set_image(url=track.artwork)
+
+    if track.album.name:
+        embed.add_field(name="Album", value=track.album.name)
+
+    await player.home.send(embed=embed)
+>>>>>>> 8a310c285cbed1df1afb6fe8012c74108ba7c6d7
 
 # 명령어 실행 전/후 처리
 @bot.before_invoke
@@ -52,6 +114,10 @@ async def add(ctx, left: int, right: int):
     """Adds two numbers together."""
     await ctx.send(left + right)
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8a310c285cbed1df1afb6fe8012c74108ba7c6d7
 # 주사위를 굴리는 명령어 (NdN 형식: N개의 N면체 주사위)
 @bot.command()
 async def roll(ctx, dice: str):
@@ -66,6 +132,10 @@ async def roll(ctx, dice: str):
     except ValueError:
         await ctx.send('올바른 형식이 아닙니다! (예: 2d6)')
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8a310c285cbed1df1afb6fe8012c74108ba7c6d7
 # 여러 선택지 중 하나를 무작위로 선택하는 명령어
 @bot.command()
 async def choose(ctx, *choices: str):
@@ -75,6 +145,10 @@ async def choose(ctx, *choices: str):
         return
     await ctx.send(random.choice(choices))
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8a310c285cbed1df1afb6fe8012c74108ba7c6d7
 # 메시지를 지정된 횟수만큼 반복하는 명령어
 @bot.command()
 async def repeat(ctx, times: int, content='repeating...'):
@@ -88,12 +162,20 @@ async def repeat(ctx, times: int, content='repeating...'):
     for i in range(times):
         await ctx.send(content)
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8a310c285cbed1df1afb6fe8012c74108ba7c6d7
 # 멤버의 서버 참가일을 보여주는 명령어
 @bot.command()
 async def joined(ctx, member: discord.Member):
     """Says when a member joined."""
     await ctx.send(f'{member.name} joined {discord.utils.format_dt(member.joined_at)}')
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8a310c285cbed1df1afb6fe8012c74108ba7c6d7
 # 'cool' 명령어 그룹 생성
 @bot.group()
 async def cool(ctx):
