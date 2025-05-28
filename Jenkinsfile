@@ -43,6 +43,10 @@ pipeline {
                     cd /app
                     echo "디스코드 봇 테스트 실행 중..."
                     
+                    # 홈 디렉토리 설정
+                    export HOME=/tmp
+                    mkdir -p $HOME/.local
+                    
                     # 파이썬 테스트 환경 설정
                     pip install --user pytest pytest-asyncio
                     
@@ -55,9 +59,9 @@ pipeline {
                     
                     # 테스트 실행
                     if [ -f "src/test_discord_bot.py" ]; then
-                        cd src && python -m pytest test_discord_bot.py -v
-                    elif [ -f "test_discord_bot.py" ]; then
-                        python -m pytest test_discord_bot.py -v
+                        python -m pytest src/test_discord_bot.py -v
+                    else
+                        echo "테스트 파일이 없습니다. 테스트를 건너뜁니다."
                     fi
                 '''
             }
