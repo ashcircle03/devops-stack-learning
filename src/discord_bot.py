@@ -164,16 +164,26 @@ async def choose(ctx, *choices: str):
     await ctx.send(random.choice(choices))
 # 메시지를 지정된 횟수만큼 반복하는 명령어
 @bot.command()
-async def repeat(ctx, times: int, content='repeating...'):
-    """Repeats a message multiple times."""
-    # Validate number of repeats
-    
-    if times <= 0:
-        await ctx.send('Number of repeats must be positive!')
-        return
-    # Send the message the specified number of times
-    for i in range(times):
-        await ctx.send(content)
+async def repeat(ctx, times, content='repeating...'):
+    """메시지를 여러 번 반복합니다. 사용법: !repeat <횟수> [메시지]"""
+    try:
+        # 숫자로 변환 시도
+        times_int = int(times)
+        
+        # 횟수 유효성 검사
+        if times_int <= 0:
+            await ctx.send('반복 횟수는 1 이상이어야 합니다!')
+            return
+        if times_int > 10:  # 너무 많은 반복을 방지
+            await ctx.send('반복 횟수는 최대 10회까지 가능합니다.')
+            return
+            
+        # 메시지 전송
+        for i in range(times_int):
+            await ctx.send(content)
+            
+    except ValueError:
+        await ctx.send('반복 횟수는 숫자로 입력해주세요! 예: `!repeat 3 안녕하세요`')
 # 멤버의 서버 참가일을 보여주는 명령어
 @bot.command()
 async def joined(ctx, member: discord.Member):
