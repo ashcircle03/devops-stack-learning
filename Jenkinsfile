@@ -146,29 +146,7 @@ pipeline {
         }
 
         stage('Deploy to Kubernetes') {
-            agent {
-                kubernetes {
-                    yaml '''
-                    apiVersion: v1
-                    kind: Pod
-                    spec:
-                      containers:
-                      - name: kubectl
-                        image: busybox:latest
-                        command:
-                        - cat
-                        tty: true
-                        resources:
-                          limits:
-                            memory: "256Mi"
-                            cpu: "200m"
-                          requests:
-                            memory: "128Mi"
-                            cpu: "100m"
-                    '''
-                    defaultContainer 'kubectl'
-                }
-            }
+            agent any
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                     sh '''
