@@ -1,10 +1,9 @@
 import os
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import random
 import datetime
 import pytz
-import time
 from prometheus_client import start_http_server, Counter, Gauge, Histogram
 
 # 프로메테우스 메트릭 정의
@@ -35,15 +34,15 @@ async def on_ready():
 # 명령어 실행 전/후 처리
 @bot.before_invoke
 async def before_invoke(ctx):
-    # time 모듈은 이미 전역으로 임포트되어 있음
-    # 속성 설정 방식 변경
-    ctx._start_time = time.time()
+    # discord.ext.tasks를 사용하여 시간 측정
+    ctx._start_time = datetime.datetime.now()
 
 @bot.after_invoke
 async def after_invoke(ctx):
-    import time
     if hasattr(ctx, '_start_time'):
-        latency = time.time() - getattr(ctx, '_start_time')
+        end_time = datetime.datetime.now()
+        start_time = getattr(ctx, '_start_time')
+        latency = (end_time - start_time).total_seconds()
         MESSAGE_LATENCY.observe(latency)
         COMMAND_COUNTER.labels(command=ctx.command.name).inc()
 
