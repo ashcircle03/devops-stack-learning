@@ -7,10 +7,7 @@ pipeline {
         KUBERNETES_API_SERVER = 'https://192.168.49.2:8443'
     }
     
-    tools {
-        // Jenkins에 설치된 툴 이름을 지정
-        jdk 'JDK 17'
-    }
+    // tools 섹션 제거 - Jenkins에 필요한 도구가 이미 설치되어 있음
     
     stages {
         stage('Checkout') {
