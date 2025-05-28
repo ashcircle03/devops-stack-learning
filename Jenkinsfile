@@ -113,7 +113,8 @@ pipeline {
             agent {
                 docker {
                     image 'alpine:3.14'
-                    args '-v ${WORKSPACE}:/workspace'
+                    reuseNode true
+                    args '-v \${WORKSPACE}:/workspace'
                 }
             }
             steps {
