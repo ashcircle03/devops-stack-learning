@@ -168,34 +168,16 @@ pipeline {
     
     post {
         always {
-            agent {
-                kubernetes {
-                    yaml '''
-                    apiVersion: v1
-                    kind: Pod
-                    spec:
-                      containers:
-                      - name: kubectl
-                        image: bitnami/kubectl:latest
-                        command:
-                        - cat
-                        tty: true
-                    '''
-                    defaultContainer 'kubectl'
-                }
-            }
-            steps {
-                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
-                    sh '''
-                        mkdir -p $HOME/.kube
-                        cp $KUBECONFIG $HOME/.kube/config
-                        chmod 600 $HOME/.kube/config
-                        
-                        echo "배포 상태 확인 중..."
-                        kubectl get pods -l app=discord-bot --insecure-skip-tls-verify || true
-                        kubectl describe deployment discord-bot --insecure-skip-tls-verify || true
-                    '''
-                }
+            withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                sh '''
+                    mkdir -p $HOME/.kube
+                    cp $KUBECONFIG $HOME/.kube/config
+                    chmod 600 $HOME/.kube/config
+                    
+                    echo "배포 상태 확인 중..."
+                    kubectl get pods -l app=discord-bot --insecure-skip-tls-verify || true
+                    kubectl describe deployment discord-bot --insecure-skip-tls-verify || true
+                '''
             }
         }
         
