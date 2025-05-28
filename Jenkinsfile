@@ -80,7 +80,7 @@ pipeline {
                         cd /workspace
                         
                         # Docker 이미지 빌드 및 푸시
-                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} -f docker/Dockerfile .
                         
                         # Docker Hub에 로그인 및 푸시
                         docker login -u $DOCKER_USERNAME -p ${DOCKER_PASSWORD}
