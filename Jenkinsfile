@@ -146,16 +146,25 @@ pipeline {
         }
 
         stage('Deploy to Kubernetes') {
-            agent any
+            agent {
+                kubernetes {
+                    yaml '''
+                    apiVersion: v1
+                    kind: Pod
+                    spec:
+                      containers:
+                      - name: kubectl
+                        image: bitnami/kubectl:latest
+                        command:
+                        - cat
+                        tty: true
+                    '''
+                    defaultContainer 'kubectl'
+                }
+            }
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                     sh '''
-                        # kubectl 명령어가 있는지 확인
-                        if ! command -v kubectl &> /dev/null; then
-                            echo "kubectl이 설치되어 있지 않습니다. 건너뜁니다."
-                            exit 0
-                        fi
-                        
                         mkdir -p $HOME/.kube
                         cp $KUBECONFIG $HOME/.kube/config
                         chmod 600 $HOME/.kube/config
@@ -166,15 +175,15 @@ pipeline {
                         
                         if [ -f "$DEPLOYMENT_FILE" ]; then
                             echo "매니페스트 파일 찾음: $DEPLOYMENT_FILE"
-                            kubectl apply -f $DEPLOYMENT_FILE --insecure-skip-tls-verify || true
+                            kubectl apply -f $DEPLOYMENT_FILE --insecure-skip-tls-verify
                             
                             echo "배포 상태 확인..."
-                            kubectl get pods -l app=discord-bot --insecure-skip-tls-verify || true
+                            kubectl get pods -l app=discord-bot --insecure-skip-tls-verify
                         else
                             echo "매니페스트 파일을 찾을 수 없습니다: $DEPLOYMENT_FILE"
                             echo "현재 디렉토리 파일 목록:"
                             ls -la
-                            exit 0
+                            exit 1
                         fi
                     '''
                 }
