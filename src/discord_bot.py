@@ -35,8 +35,9 @@ async def on_ready():
 # 명령어 실행 전/후 처리
 @bot.before_invoke
 async def before_invoke(ctx):
-    import time
-    setattr(ctx, '_start_time', time.time())
+    # time 모듈은 이미 전역으로 임포트되어 있음
+    # 속성 설정 방식 변경
+    ctx._start_time = time.time()
 
 @bot.after_invoke
 async def after_invoke(ctx):
