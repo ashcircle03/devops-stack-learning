@@ -44,13 +44,13 @@ pipeline {
                     echo "디스코드 봇 테스트 실행 중..."
                     
                     # 파이썬 테스트 환경 설정
-                    pip install pytest pytest-asyncio
+                    pip install --user pytest pytest-asyncio
                     
                     # 의존성 설치
                     if [ -f "src/requirements.txt" ]; then
-                        pip install -r src/requirements.txt
+                        pip install --user -r src/requirements.txt
                     elif [ -f "requirements.txt" ]; then
-                        pip install -r requirements.txt
+                        pip install --user -r requirements.txt
                     fi
                     
                     # 테스트 실행
