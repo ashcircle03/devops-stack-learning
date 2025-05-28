@@ -118,13 +118,27 @@ pipeline {
             }
             steps {
                 sh '''
+                    # 전체 파일 목록 확인
+                    find . -type f -name "*.yaml" | sort
+                    
                     cd /workspace
                     NEW_IMAGE="${DOCKER_IMAGE}:${DOCKER_TAG}"
-                    # GitHub 저장소에서는 deployment.yaml이 루트 디렉토리에 있을 수 있음
+                    
+                    # 매니페스트 파일 경로 확인
+                    echo "현재 디렉토리: $(pwd)"
+                    ls -la
+                    
+                    # 정확한 경로 지정
                     if [ -f "k8s/app/deployment.yaml" ]; then
                         DEPLOYMENT_FILE="k8s/app/deployment.yaml"
                     else
-                        DEPLOYMENT_FILE="deployment.yaml"
+                        # 루트 디렉토리에서도 확인
+                        if [ -f "/workspace/k8s/app/deployment.yaml" ]; then
+                            DEPLOYMENT_FILE="/workspace/k8s/app/deployment.yaml"
+                        else
+                            echo "매니페스트 파일을 찾을 수 없습니다!"
+                            exit 1
+                        fi
                     fi
                     
                     sed -i "s|image: .*|image: $NEW_IMAGE|g" $DEPLOYMENT_FILE
