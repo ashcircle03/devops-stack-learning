@@ -1,68 +1,14 @@
 import os
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 import random
 import datetime
 import pytz
-import logging
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
 from prometheus_client import start_http_server, Counter, Gauge, Histogram
 
 # 프로메테우스 메트릭 정의
 COMMAND_COUNTER = Counter('discord_bot_commands_total', 'Total number of commands executed', ['command'])
 MESSAGE_LATENCY = Histogram('discord_bot_message_latency_seconds', 'Message processing latency')
-
-# Slack 로깅 설정
-# 환경 변수에서 Slack 토큰 가져오기 (없으면 None)
-SLACK_BOT_TOKEN = os.environ.get('SLACK_BOT_TOKEN')
-SLACK_CHANNEL = os.environ.get('SLACK_CHANNEL', '#discord-bot-logs')
-
-# 로깅 설정
-logger = logging.getLogger('discord_bot')
-logger.setLevel(logging.INFO)
-
-# 콘솔 핸들러 추가
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
-
-# Slack 클라이언트 초기화 (토큰이 설정된 경우에만)
-slack_client = None
-if SLACK_BOT_TOKEN and SLACK_CHANNEL:
-    try:
-        slack_client = WebClient(token=SLACK_BOT_TOKEN)
-        logger.info("Slack 클라이언트가 성공적으로 초기화되었습니다.")
-    except Exception as e:
-        logger.error(f"Slack 클라이언트 초기화 중 오류 발생: {str(e)}")
-else:
-    logger.warning("SLACK_BOT_TOKEN 또는 SLACK_CHANNEL이 설정되지 않아 Slack 알림이 비활성화됩니다.")
-
-# Slack으로 메시지 보내는 함수
-async def send_to_slack(message, level='info'):
-    if not slack_client:
-        return
-    
-    # 로그 레벨에 따른 이모지 설정
-    emoji = {
-        'info': ':information_source:',
-        'warning': ':warning:',
-        'error': ':x:',
-        'success': ':white_check_mark:'
-    }.get(level, ':information_source:')
-    
-    try:
-        # Slack에 메시지 전송 (비동기 호출)
-        response = slack_client.chat_postMessage(
-            channel=SLACK_CHANNEL,
-            text=f"{emoji} {message}"
-        )
-        logger.info(f"Slack에 메시지 전송 성공: {level}")
-    except SlackApiError as e:
-        logger.error(f"Slack에 메시지를 보내는 중 오류 발생: {e.response['error'] if hasattr(e, 'response') else str(e)}")
-
 
 # 봇 토큰 환경 변수에서 가져오기
 TOKEN = os.environ['BOT_TOKEN']
@@ -84,63 +30,26 @@ async def on_ready():
     print('------')
     # 프로메테우스 메트릭 서버 시작
     start_http_server(8000)
-    
-    # 로그 출력
-    logger.info(f"디스코드 봇 시작 (ID: {bot.user.id})")
-    
-    # Slack으로 봇 시작 알림 보내기
-    try:
-        korea_time = datetime.datetime.now(pytz.timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')
-        startup_message = f"""🚀 *디스코드 봇이 시작되었습니다!*
-• 버전: `32`
-• 서버 시간: `{korea_time}`
-• 사용자 수: `{len(bot.users)}`
-• 서버 수: `{len(bot.guilds)}`"""
-        
-        await send_to_slack(startup_message, level='success')
-        logger.info("봇 시작 알림을 Slack으로 전송했습니다.")
-    except Exception as e:
-        logger.error(f"Slack으로 시작 알림을 보내는 중 오류 발생: {str(e)}")
 
 # 명령어 실행 전/후 처리
 @bot.before_invoke
 async def before_invoke(ctx):
-    # discord.ext.tasks를 사용하여 시간 측정
-    ctx._start_time = datetime.datetime.now()
+    import time
+    setattr(ctx, '_start_time', time.time())
 
 @bot.after_invoke
 async def after_invoke(ctx):
-    # discord.ext.tasks를 사용하여 시간 측정
+    import time
     if hasattr(ctx, '_start_time'):
-        end_time = datetime.datetime.now()
-        start_time = getattr(ctx, '_start_time')
-        latency = (end_time - start_time).total_seconds()
-        # 지연 시간 측정 및 프로메테우스 메트릭 갱신
+        latency = time.time() - getattr(ctx, '_start_time')
         MESSAGE_LATENCY.observe(latency)
-        log_message = f'명령어 {ctx.command} 실행 완료 - 지연 시간: {latency:.4f}초'
-        print(log_message)
-        
-        # Slack으로 명령어 실행 로그 전송 (지연 시간이 1초 이상인 경우에만)
-        if latency > 1.0:
-            await send_to_slack(
-                f'⚠️ 느린 명령어 감지: `{ctx.command}` - 지연 시간: {latency:.4f}초\n'
-                f'사용자: {ctx.author.name} ({ctx.author.id})\n'
-                f'서버: {ctx.guild.name if ctx.guild else "DM"}\n'
-                f'채널: {ctx.channel.name if hasattr(ctx.channel, "name") else "DM"}',
-                level='warning'
-            )
         COMMAND_COUNTER.labels(command=ctx.command.name).inc()
 
 # 두 숫자를 더하는 명령어
 @bot.command()
-async def add(ctx, left, right):
-    """두 숫자를 더합니다. 사용법: !add <숫자1> <숫자2>"""
-    try:
-        left_num = int(left)
-        right_num = int(right)
-        await ctx.send(f"{left_num} + {right_num} = {left_num + right_num}")
-    except ValueError:
-        await ctx.send("올바른 숫자를 입력해주세요! 예: `!add 10 20`")
+async def add(ctx, left: int, right: int):
+    """Adds two numbers together."""
+    await ctx.send(left + right)
 # 주사위를 굴리는 명령어 (NdN 형식: N개의 N면체 주사위)
 @bot.command()
 async def roll(ctx, dice: str):
@@ -164,26 +73,16 @@ async def choose(ctx, *choices: str):
     await ctx.send(random.choice(choices))
 # 메시지를 지정된 횟수만큼 반복하는 명령어
 @bot.command()
-async def repeat(ctx, times, content='repeating...'):
-    """메시지를 여러 번 반복합니다. 사용법: !repeat <횟수> [메시지]"""
-    try:
-        # 숫자로 변환 시도
-        times_int = int(times)
-        
-        # 횟수 유효성 검사
-        if times_int <= 0:
-            await ctx.send('반복 횟수는 1 이상이어야 합니다!')
-            return
-        if times_int > 10:  # 너무 많은 반복을 방지
-            await ctx.send('반복 횟수는 최대 10회까지 가능합니다.')
-            return
-            
-        # 메시지 전송
-        for i in range(times_int):
-            await ctx.send(content)
-            
-    except ValueError:
-        await ctx.send('반복 횟수는 숫자로 입력해주세요! 예: `!repeat 3 안녕하세요`')
+async def repeat(ctx, times: int, content='repeating...'):
+    """Repeats a message multiple times."""
+    # Validate number of repeats
+    
+    if times <= 0:
+        await ctx.send('Number of repeats must be positive!')
+        return
+    # Send the message the specified number of times
+    for i in range(times):
+        await ctx.send(content)
 # 멤버의 서버 참가일을 보여주는 명령어
 @bot.command()
 async def joined(ctx, member: discord.Member):
@@ -224,19 +123,132 @@ async def join(ctx):
         await ctx.send("먼저 음성 채널에 참가해주세요!")
         return
     
-    await ctx.send("이 명령어는 더 이상 지원되지 않습니다. 음악 관련 기능이 제거되었습니다.")
-    # Slack에 로그 전송
-    await send_to_slack(f"사용자 {ctx.author.name}이 제거된 join 명령어를 사용했습니다.", level='warning')
+    try:
+        player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
+        player.home = ctx.channel
+        VOICE_CONNECTIONS.inc()
+        await ctx.send(f"{ctx.author.voice.channel.name}에 참가했습니다!")
+    except Exception as e:
+        await ctx.send(f"음성 채널 참가 중 오류가 발생했습니다: {str(e)}")
 
 
-# 음성 채널 관련 안내 명령어 (이전 명령어 대체)
+# 음성 채널에서 나가는 명령어
 @bot.command(aliases=["dc"])
 async def disconnect(ctx):
-    """이전 음성 채널 연결 해제 명령어 (현재는 지원하지 않음)"""
-    await ctx.send("이 명령어는 더 이상 지원되지 않습니다. 음악 관련 기능이 제거되었습니다.")
-    # Slack에 로그 전송
-    await send_to_slack(f"사용자 {ctx.author.name}이 제거된 disconnect 명령어를 사용했습니다.", level='warning')
+    """봇을 음성 채널에서 나가게 합니다."""
+    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
+    if not player:
+        await ctx.send("봇이 음성 채널에 없습니다!")
+        return
+    
+    await player.disconnect()
+    VOICE_CONNECTIONS.dec()
+    await ctx.message.add_reaction("✅")
 
+
+# 음악을 재생하는 명령어
+@bot.command()
+async def play(ctx, *, query: str):
+    """YouTube에서 음악을 검색하고 재생합니다."""
+    if not ctx.guild:
+        return
+
+    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
+    if not player:
+        try:
+            player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
+            player.home = ctx.channel
+        except AttributeError:
+            await ctx.send("먼저 음성 채널에 참가해주세요!")
+            return
+        except discord.ClientException:
+            await ctx.send("음성 채널 참가에 실패했습니다. 다시 시도해주세요.")
+            return
+
+    # 자동 재생 활성화
+    player.autoplay = wavelink.AutoPlayMode.enabled
+
+    try:
+        # 검색 결과 가져오기
+        await ctx.send(f"🔍 '{query}' 검색 중...")
+        
+        # YouTube 검색으로 변경
+        if not query.startswith(('http://', 'https://')):
+            query = f'ytsearch:{query}'  # 일반 YouTube 검색으로 변경
+            
+        tracks: wavelink.Search = await wavelink.Playable.search(query)
+        
+        if not tracks:
+            await ctx.send(f"❌ '{query}'에 대한 검색 결과가 없습니다.")
+            return
+
+        if isinstance(tracks, wavelink.Playlist):
+            # 플레이리스트인 경우
+            added: int = await player.queue.put_wait(tracks)
+            await ctx.send(f"✅ 플레이리스트 **`{tracks.name}`** ({added}곡)을 큐에 추가했습니다.")
+        else:
+            if tracks:
+                # 첫 번째 트랙만 사용
+                track: wavelink.Playable = tracks[0]
+                await player.queue.put_wait(track)
+                await ctx.send(f"✅ **`{track.title}`** by **`{track.author}`**을 큐에 추가했습니다.")
+            else:
+                await ctx.send("❌ 음악을 찾을 수 없습니다. 다른 검색어를 시도해보세요.")
+                return
+
+        if not player.playing:
+            # 현재 재생 중이 아니면 바로 재생
+            try:
+                await player.play(player.queue.get(), volume=30)
+            except wavelink.exceptions.NodeException as e:
+                await ctx.send("❌ 음악 서버와의 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.")
+                print(f"Node connection error: {str(e)}")
+            except wavelink.exceptions.TrackLoadException as e:
+                await ctx.send("❌ 음악을 찾을 수 없습니다. 다른 검색어를 시도해보세요.")
+                print(f"Track load error: {str(e)}")
+            except Exception as e:
+                await ctx.send(f"❌ 음악 검색/재생 중 오류가 발생했습니다: {str(e)}")
+                print(f"Error in play command: {str(e)}")
+
+    except Exception as e:
+        await ctx.send(f"❌ 음악 검색/재생 중 오류가 발생했습니다: {str(e)}")
+        print(f"Error in play command: {str(e)}")
+
+# 재생 중인 음악을 일시정지하는 명령어
+@bot.command(name="toggle", aliases=["pause", "resume"])
+async def pause_resume(ctx):
+    """재생 중인 음악을 일시정지하거나 다시 재생합니다."""
+    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
+    if not player:
+        await ctx.send("봇이 음성 채널에 없습니다!")
+        return
+    
+    await player.pause(not player.paused)
+    await ctx.message.add_reaction("✅")
+
+# 재생 중인 음악을 중지하는 명령어
+@bot.command()
+async def skip(ctx):
+    """현재 재생 중인 음악을 건너뜁니다."""
+    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
+    if not player:
+        await ctx.send("봇이 음성 채널에 없습니다!")
+        return
+    
+    await player.skip(force=True)
+    await ctx.message.add_reaction("✅")
+
+# 볼륨 조절 명령어
+@bot.command()
+async def volume(ctx, value: int):
+    """재생 볼륨을 조절합니다 (0-100)."""
+    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
+    if not player:
+        await ctx.send("봇이 음성 채널에 없습니다!")
+        return
+    
+    await player.set_volume(value)
+    await ctx.message.add_reaction("✅")
 
 # 봇 실행 (직접 실행될 때만)
 if __name__ == '__main__':
