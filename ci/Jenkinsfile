@@ -29,7 +29,7 @@ pipeline {
                 ]) {
                 sh '''
                         echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-                        docker build --no-cache -t ${DOCKER_IMAGE}:${DOCKER_TAG} --build-arg BOT_TOKEN=$BOT_TOKEN .
+                        docker build --no-cache -t ${DOCKER_IMAGE}:${DOCKER_TAG} --build-arg BOT_TOKEN=$BOT_TOKEN -f docker/Dockerfile .
                         docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
                         docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG}
                     docker logout
@@ -42,9 +42,9 @@ pipeline {
             steps {
                 sh '''
                     NEW_IMAGE="${DOCKER_IMAGE}:${DOCKER_TAG}"
-                    sed -i "s|image: .*|image: $NEW_IMAGE|g" deployment.yaml
-                    echo "Updated deployment.yaml with new image: $NEW_IMAGE"
-                    cat deployment.yaml
+                    sed -i "s|image: .*|image: $NEW_IMAGE|g" k8s/app/deployment.yaml
+                    echo "Updated k8s/app/deployment.yaml with new image: $NEW_IMAGE"
+                    cat k8s/app/deployment.yaml
                 '''
                     }
                 }
@@ -58,7 +58,7 @@ pipeline {
                         chmod 600 $HOME/.kube/config
                         
                         echo "Deploying to Kubernetes..."
-                        kubectl apply -f deployment.yaml --insecure-skip-tls-verify
+                        kubectl apply -f k8s/app/deployment.yaml --insecure-skip-tls-verify
                 '''
                 }
             }

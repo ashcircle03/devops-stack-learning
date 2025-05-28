@@ -6,16 +6,32 @@ Discord 봇을 개발하고 Jenkins를 통해 CI/CD 파이프라인을 구축한
 
 ```
 project1/
-├── requirements.txt         # Python 패키지 의존성
-├── discord_bot.py          # Discord 봇 메인 코드
-├── docker-compose.yml      # Docker Compose 설정
-├── deployment.yaml         # Kubernetes 배포 설정
-├── kubeconfig             # Kubernetes 설정
-├── Jenkinsfile            # Jenkins 파이프라인 정의
-├── jenkins-deployer-role.yaml  # Jenkins 권한 설정
-├── jenkins.Dockerfile     # Jenkins 컨테이너 설정
-├── Dockerfile             # Discord 봇 컨테이너 설정
-└── README.md              # 프로젝트 문서
+├── src/                    # 소스 코드 디렉토리
+│   ├── discord_bot.py      # Discord 봇 메인 코드
+│   ├── requirements.txt    # 의존성 패키지 목록
+│   └── test_discord_bot.py # 테스트 코드
+│
+├── docker/                 # 도커 관련 파일
+│   ├── Dockerfile          # 디스코드 봇 도커 이미지 설정
+│   └── docker-compose.yml  # 도커 컴포즈 설정
+│
+├── k8s/                    # 쿠버네티스 관련 파일
+│   ├── kubeconfig          # 쿠버네티스 설정
+│   ├── app/                # 애플리케이션 배포 관련
+│   │   ├── deployment.yaml # 디스코드 봇 배포 설정
+│   │   └── youtube-api-secret.yaml # API 시크릿
+│   │
+│   └── monitoring/         # 모니터링 관련 파일
+│       ├── prometheus-*.yaml # 프로메테우스 설정 파일들
+│       ├── kube-state-metrics-*.yaml # 쿠버네티스 상태 메트릭 설정
+│       └── node-exporter-daemonset.yaml # 노드 익스포터 설정
+│
+├── ci/                     # CI/CD 관련 파일
+│   ├── Jenkinsfile         # Jenkins 파이프라인 정의
+│   ├── jenkins.Dockerfile  # Jenkins 컨테이너 설정
+│   └── jenkins-deployer-role.yaml # Jenkins 권한 설정
+│
+└── README.md               # 프로젝트 문서
 ```
 
 ## CI/CD 파이프라인
@@ -69,7 +85,7 @@ graph TD
 1. Python 3.11 설치
 2. 의존성 설치:
    ```bash
-   pip install -r requirements.txt
+   pip install -r src/requirements.txt
    ```
 3. 환경 변수 설정:
    ```bash
@@ -77,13 +93,14 @@ graph TD
    ```
 4. 봇 실행:
    ```bash
-   python discord_bot.py
+   python src/discord_bot.py
    ```
 
 ### Docker로 실행
 
 ```bash
-docker build -t discord-bot .
+cd docker
+docker build -t discord-bot -f Dockerfile ..
 docker run -e BOT_TOKEN='your_discord_bot_token' discord-bot
 ```
 
@@ -96,7 +113,12 @@ docker run -e BOT_TOKEN='your_discord_bot_token' discord-bot
 
 2. 배포:
    ```bash
-   kubectl apply -f deployment.yaml
+   kubectl apply -f k8s/app/deployment.yaml
+   ```
+
+3. 모니터링 설정 배포:
+   ```bash
+   kubectl apply -f k8s/monitoring/
    ```
 
 ## CI/CD 파이프라인
