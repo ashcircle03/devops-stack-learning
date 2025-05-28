@@ -17,32 +17,6 @@ pipeline {
         }
         
         stage('Setup Environment') {
-            agent {
-                kubernetes {
-                    yaml '''
-                    apiVersion: v1
-                    kind: Pod
-                    spec:
-                      containers:
-                      - name: kubectl
-                        image: alpine/k8s:1.20.7
-                        command:
-                        - cat
-                        tty: true
-                        resources:
-                          limits:
-                            memory: "256Mi"
-                            cpu: "200m"
-                          requests:
-                            memory: "128Mi"
-                            cpu: "100m"
-                    '''
-                    defaultContainer 'kubectl'
-                }
-                docker {
-                    image 'python:3.9'
-                    args '-v ${WORKSPACE}:/app'
-                }
             }
             steps {
                 sh '''
