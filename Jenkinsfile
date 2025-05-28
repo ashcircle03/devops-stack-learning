@@ -150,26 +150,28 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                     sh '''
-                        # kubectl 명령어가 있는지 확인
-                        if ! command -v kubectl &> /dev/null; then
+                        if ! command -v kubectl >/dev/null 2>&1; then
                             echo "kubectl이 설치되어 있지 않습니다. 건너뜁니다."
                             exit 0
                         fi
-                        
+
+                        # kubeconfig 설정
                         mkdir -p $HOME/.kube
                         cp $KUBECONFIG $HOME/.kube/config
                         chmod 600 $HOME/.kube/config
-                        
-                        echo "쿠버네티스에 배포 중..."
-                        # 매니페스트 파일 경로 지정
-                        DEPLOYMENT_FILE="./k8s/app/deployment.yaml"
+
+                        # 매니페스트 파일 경로 확인
+                        DEPLOYMENT_FILE="${WORKSPACE}/k8s/app/deployment.yaml"
                         
                         if [ -f "$DEPLOYMENT_FILE" ]; then
-                            echo "매니페스트 파일 찾음: $DEPLOYMENT_FILE"
-                            kubectl apply -f $DEPLOYMENT_FILE --insecure-skip-tls-verify || true
+                            echo "배포 파일 적용 중: $DEPLOYMENT_FILE"
+                            kubectl apply -f $DEPLOYMENT_FILE --insecure-skip-tls-verify
                             
-                            echo "배포 상태 확인..."
-                            kubectl get pods -l app=discord-bot --insecure-skip-tls-verify || true
+                            echo "배포 상태 확인 중..."
+                            kubectl rollout status deployment/discord-bot --insecure-skip-tls-verify
+                            
+                            echo "Pod 상태 확인 중..."
+                            kubectl get pods -l app=discord-bot --insecure-skip-tls-verify
                         else
                             echo "매니페스트 파일을 찾을 수 없습니다: $DEPLOYMENT_FILE"
                             echo "현재 디렉토리 파일 목록:"
