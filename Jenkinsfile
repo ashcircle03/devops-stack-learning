@@ -88,8 +88,8 @@ pipeline {
                             docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} --build-arg BOT_TOKEN=$BOT_TOKEN -f docker/Dockerfile .
                             
                             # Docker Hub에 로그인 및 푸시
-                            mkdir -p ~/.docker
-                            export HOME="$(pwd)"
+                            export DOCKER_CONFIG="$(pwd)/.docker"
+                            mkdir -p "${DOCKER_CONFIG}"
                             docker login -u $DOCKER_USERNAME -p ${DOCKER_PASSWORD}
                             docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
                             
