@@ -77,26 +77,31 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD'), string(credentialsId: 'discord-bot-token', variable: 'BOT_TOKEN')]) {
                     sh '''
-                        cd /workspace
-                        
-                        # Dockerfile 파일 확인
+                        # 작업 디렉토리 확인
+                        pwd
                         ls -la
-                        ls -la docker || echo "docker 디렉토리 없음"
                         
-                        # Docker 이미지 빌드 및 푸시
-                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} -f ./docker/Dockerfile .
-                        
-                        # Docker Hub에 로그인 및 푸시
-                        docker login -u $DOCKER_USERNAME -p ${DOCKER_PASSWORD}
-                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-                        
-                        # 최신 태그도 함께 푸시
-                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
-                        docker push ${DOCKER_IMAGE}:latest
-                        
-                        # 정리
-                        docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG}
-                        docker logout
+                        # Dockerfile 이 있는지 확인
+                        if [ -f "docker/Dockerfile" ]; then
+                            echo "Dockerfile 찾음: docker/Dockerfile"
+                            # Docker 이미지 빌드
+                            docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} --build-arg BOT_TOKEN=$BOT_TOKEN -f docker/Dockerfile .
+                            
+                            # Docker Hub에 로그인 및 푸시
+                            docker login -u $DOCKER_USERNAME -p ${DOCKER_PASSWORD}
+                            docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                            
+                            # 최신 태그도 함께 푸시
+                            docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+                            docker push ${DOCKER_IMAGE}:latest
+                            
+                            # 정리
+                            docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG}
+                            docker logout
+                        else
+                            echo "Dockerfile을 찾을 수 없습니다!"
+                            exit 1
+                        fi
                     '''
                 }
             }
