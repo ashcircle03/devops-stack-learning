@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: discord-bot
-        image: docker.io/ashcircle03/discord-bot:31  # 태그 업데이트
+        image: docker.io/ashcircle03/discord-bot:32  # 태그 업데이트
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
