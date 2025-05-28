@@ -4,11 +4,58 @@ from discord.ext import commands, tasks
 import random
 import datetime
 import pytz
+import logging
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 from prometheus_client import start_http_server, Counter, Gauge, Histogram
 
 # 프로메테우스 메트릭 정의
 COMMAND_COUNTER = Counter('discord_bot_commands_total', 'Total number of commands executed', ['command'])
 MESSAGE_LATENCY = Histogram('discord_bot_message_latency_seconds', 'Message processing latency')
+
+# Slack 로깅 설정
+# 환경 변수에서 Slack webhook URL 가져오기 (없으면 None)
+SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL')
+SLACK_CHANNEL = os.environ.get('SLACK_CHANNEL', '#discord-bot-logs')
+
+# 로깅 설정
+logger = logging.getLogger('discord_bot')
+logger.setLevel(logging.INFO)
+
+# 콘솔 핸들러 추가
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+
+# Slack 클라이언트 초기화 (webhook URL이 설정된 경우에만)
+slack_client = None
+if SLACK_WEBHOOK_URL:
+    slack_client = WebClient(token=os.environ.get('SLACK_BOT_TOKEN'))
+
+# Slack으로 메시지 보내는 함수
+async def send_to_slack(message, level='info'):
+    if not slack_client:
+        return
+    
+    # 로그 레벨에 따른 이모지 설정
+    emoji = {
+        'info': ':information_source:',
+        'warning': ':warning:',
+        'error': ':x:',
+        'success': ':white_check_mark:'
+    }.get(level, ':information_source:')
+    
+    try:
+        # Slack에 메시지 전송
+        response = await slack_client.chat_postMessage(
+            channel=SLACK_CHANNEL,
+            text=f"{emoji} {message}"
+        )
+    except SlackApiError as e:
+        logger.error(f"Slack에 메시지를 보내는 중 오류 발생: {e.response['error']}")
+
 
 # 봇 토큰 환경 변수에서 가져오기
 TOKEN = os.environ['BOT_TOKEN']
@@ -30,6 +77,18 @@ async def on_ready():
     print('------')
     # 프로메테우스 메트릭 서버 시작
     start_http_server(8000)
+    
+    # 로그 출력
+    logger.info(f"디스코드 봇 시작 (ID: {bot.user.id})")
+    
+    # Slack으로 봇 시작 알림 보내기
+    startup_message = f"디스코드 봇이 시작되었습니다! 
+버전: 32
+서버 시간: {datetime.datetime.now(pytz.timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')}
+사용자 수: {len(bot.users)}
+서버 수: {len(bot.guilds)}"
+    
+    await send_to_slack(startup_message, level='success')
 
 # 명령어 실행 전/후 처리
 @bot.before_invoke
@@ -39,11 +98,25 @@ async def before_invoke(ctx):
 
 @bot.after_invoke
 async def after_invoke(ctx):
+    # discord.ext.tasks를 사용하여 시간 측정
     if hasattr(ctx, '_start_time'):
         end_time = datetime.datetime.now()
         start_time = getattr(ctx, '_start_time')
         latency = (end_time - start_time).total_seconds()
+        # 지연 시간 측정 및 프로메테우스 메트릭 갱신
         MESSAGE_LATENCY.observe(latency)
+        log_message = f'명령어 {ctx.command} 실행 완료 - 지연 시간: {latency:.4f}초'
+        print(log_message)
+        
+        # Slack으로 명령어 실행 로그 전송 (지연 시간이 1초 이상인 경우에만)
+        if latency > 1.0:
+            await send_to_slack(
+                f'⚠️ 느린 명령어 감지: `{ctx.command}` - 지연 시간: {latency:.4f}초\n'
+                f'사용자: {ctx.author.name} ({ctx.author.id})\n'
+                f'서버: {ctx.guild.name if ctx.guild else "DM"}\n'
+                f'채널: {ctx.channel.name if hasattr(ctx.channel, "name") else "DM"}',
+                level='warning'
+            )
         COMMAND_COUNTER.labels(command=ctx.command.name).inc()
 
 # 두 숫자를 더하는 명령어
@@ -124,27 +197,18 @@ async def join(ctx):
         await ctx.send("먼저 음성 채널에 참가해주세요!")
         return
     
-    try:
-        player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
-        player.home = ctx.channel
-        VOICE_CONNECTIONS.inc()
-        await ctx.send(f"{ctx.author.voice.channel.name}에 참가했습니다!")
-    except Exception as e:
-        await ctx.send(f"음성 채널 참가 중 오류가 발생했습니다: {str(e)}")
+    await ctx.send("이 명령어는 더 이상 지원되지 않습니다. 음악 관련 기능이 제거되었습니다.")
+    # Slack에 로그 전송
+    await send_to_slack(f"사용자 {ctx.author.name}이 제거된 join 명령어를 사용했습니다.", level='warning')
 
 
-# 음성 채널에서 나가는 명령어
+# 음성 채널 관련 안내 명령어 (이전 명령어 대체)
 @bot.command(aliases=["dc"])
 async def disconnect(ctx):
-    """봇을 음성 채널에서 나가게 합니다."""
-    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
-    if not player:
-        await ctx.send("봇이 음성 채널에 없습니다!")
-        return
-    
-    await player.disconnect()
-    VOICE_CONNECTIONS.dec()
-    await ctx.message.add_reaction("✅")
+    """이전 음성 채널 연결 해제 명령어 (현재는 지원하지 않음)"""
+    await ctx.send("이 명령어는 더 이상 지원되지 않습니다. 음악 관련 기능이 제거되었습니다.")
+    # Slack에 로그 전송
+    await send_to_slack(f"사용자 {ctx.author.name}이 제거된 disconnect 명령어를 사용했습니다.", level='warning')
 
 
 # 봇 실행 (직접 실행될 때만)
