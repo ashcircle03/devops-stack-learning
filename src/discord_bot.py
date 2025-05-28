@@ -31,8 +31,14 @@ logger.addHandler(console_handler)
 
 # Slack 클라이언트 초기화 (토큰이 설정된 경우에만)
 slack_client = None
-if SLACK_BOT_TOKEN:
-    slack_client = WebClient(token=SLACK_BOT_TOKEN)
+if SLACK_BOT_TOKEN and SLACK_CHANNEL:
+    try:
+        slack_client = WebClient(token=SLACK_BOT_TOKEN)
+        logger.info("Slack 클라이언트가 성공적으로 초기화되었습니다.")
+    except Exception as e:
+        logger.error(f"Slack 클라이언트 초기화 중 오류 발생: {str(e)}")
+else:
+    logger.warning("SLACK_BOT_TOKEN 또는 SLACK_CHANNEL이 설정되지 않아 Slack 알림이 비활성화됩니다.")
 
 # Slack으로 메시지 보내는 함수
 async def send_to_slack(message, level='info'):
@@ -83,10 +89,18 @@ async def on_ready():
     logger.info(f"디스코드 봇 시작 (ID: {bot.user.id})")
     
     # Slack으로 봇 시작 알림 보내기
-    korea_time = datetime.datetime.now(pytz.timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')
-    startup_message = f"디스코드 봇이 시작되었습니다!\n버전: 32\n서버 시간: {korea_time}\n사용자 수: {len(bot.users)}\n서버 수: {len(bot.guilds)}"
-    
-    await send_to_slack(startup_message, level='success')
+    try:
+        korea_time = datetime.datetime.now(pytz.timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')
+        startup_message = f"""🚀 *디스코드 봇이 시작되었습니다!*
+• 버전: `32`
+• 서버 시간: `{korea_time}`
+• 사용자 수: `{len(bot.users)}`
+• 서버 수: `{len(bot.guilds)}`"""
+        
+        await send_to_slack(startup_message, level='success')
+        logger.info("봇 시작 알림을 Slack으로 전송했습니다.")
+    except Exception as e:
+        logger.error(f"Slack으로 시작 알림을 보내는 중 오류 발생: {str(e)}")
 
 # 명령어 실행 전/후 처리
 @bot.before_invoke
