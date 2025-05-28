@@ -14,8 +14,8 @@ COMMAND_COUNTER = Counter('discord_bot_commands_total', 'Total number of command
 MESSAGE_LATENCY = Histogram('discord_bot_message_latency_seconds', 'Message processing latency')
 
 # Slack 로깅 설정
-# 환경 변수에서 Slack webhook URL 가져오기 (없으면 None)
-SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL')
+# 환경 변수에서 Slack 토큰 가져오기 (없으면 None)
+SLACK_BOT_TOKEN = os.environ.get('SLACK_BOT_TOKEN')
 SLACK_CHANNEL = os.environ.get('SLACK_CHANNEL', '#discord-bot-logs')
 
 # 로깅 설정
@@ -29,10 +29,10 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
-# Slack 클라이언트 초기화 (webhook URL이 설정된 경우에만)
+# Slack 클라이언트 초기화 (토큰이 설정된 경우에만)
 slack_client = None
-if SLACK_WEBHOOK_URL:
-    slack_client = WebClient(token=os.environ.get('SLACK_BOT_TOKEN'))
+if SLACK_BOT_TOKEN:
+    slack_client = WebClient(token=SLACK_BOT_TOKEN)
 
 # Slack으로 메시지 보내는 함수
 async def send_to_slack(message, level='info'):
@@ -48,13 +48,14 @@ async def send_to_slack(message, level='info'):
     }.get(level, ':information_source:')
     
     try:
-        # Slack에 메시지 전송
-        response = await slack_client.chat_postMessage(
+        # Slack에 메시지 전송 (비동기 호출)
+        response = slack_client.chat_postMessage(
             channel=SLACK_CHANNEL,
             text=f"{emoji} {message}"
         )
+        logger.info(f"Slack에 메시지 전송 성공: {level}")
     except SlackApiError as e:
-        logger.error(f"Slack에 메시지를 보내는 중 오류 발생: {e.response['error']}")
+        logger.error(f"Slack에 메시지를 보내는 중 오류 발생: {e.response['error'] if hasattr(e, 'response') else str(e)}")
 
 
 # 봇 토큰 환경 변수에서 가져오기
@@ -82,11 +83,8 @@ async def on_ready():
     logger.info(f"디스코드 봇 시작 (ID: {bot.user.id})")
     
     # Slack으로 봇 시작 알림 보내기
-    startup_message = f"디스코드 봇이 시작되었습니다! 
-버전: 32
-서버 시간: {datetime.datetime.now(pytz.timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')}
-사용자 수: {len(bot.users)}
-서버 수: {len(bot.guilds)}"
+    korea_time = datetime.datetime.now(pytz.timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')
+    startup_message = f"디스코드 봇이 시작되었습니다!\n버전: 32\n서버 시간: {korea_time}\n사용자 수: {len(bot.users)}\n서버 수: {len(bot.guilds)}"
     
     await send_to_slack(startup_message, level='success')
 
