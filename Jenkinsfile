@@ -17,7 +17,6 @@ pipeline {
         }
         
         stage('Setup Environment') {
-            }
             steps {
                 sh '''
                     # 시스템 정보 확인
