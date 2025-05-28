@@ -113,27 +113,28 @@ pipeline {
             agent any
             steps {
                 sh '''
-                    # 전체 파일 목록 확인
-                    find . -type f -name "*.yaml" | sort
-                    
-                    cd /workspace
-                    NEW_IMAGE="${DOCKER_IMAGE}:${DOCKER_TAG}"
-                    
-                    # 매니페스트 파일 경로 확인
+                    # 시스템 정보 확인
                     echo "현재 디렉토리: $(pwd)"
                     ls -la
                     
-                    # 정확한 경로 지정
-                    if [ -f "k8s/app/deployment.yaml" ]; then
-                        DEPLOYMENT_FILE="k8s/app/deployment.yaml"
+                    # 전체 파일 목록 확인
+                    echo "모든 YAML 파일 검색:"
+                    find . -type f -name "*.yaml" | sort
+                    
+                    # 이미지 정보 설정
+                    NEW_IMAGE="${DOCKER_IMAGE}:${DOCKER_TAG}"
+                    echo "새 이미지: $NEW_IMAGE"
+                    
+                    # 매니페스트 파일 경로 확인
+                    DEPLOYMENT_FILE="./k8s/app/deployment.yaml"
+                    
+                    if [ -f "${DEPLOYMENT_FILE}" ]; then
+                        echo "매니페스트 파일 찾음: ${DEPLOYMENT_FILE}"
                     else
-                        # 루트 디렉토리에서도 확인
-                        if [ -f "/workspace/k8s/app/deployment.yaml" ]; then
-                            DEPLOYMENT_FILE="/workspace/k8s/app/deployment.yaml"
-                        else
-                            echo "매니페스트 파일을 찾을 수 없습니다!"
-                            exit 1
-                        fi
+                        echo "매니페스트 파일을 찾을 수 없습니다: ${DEPLOYMENT_FILE}"
+                        echo "현재 디렉토리 파일 목록:"
+                        ls -la
+                        exit 1
                     fi
                     
                     sed -i "s|image: .*|image: $NEW_IMAGE|g" $DEPLOYMENT_FILE
