@@ -119,9 +119,14 @@ async def after_invoke(ctx):
 
 # 두 숫자를 더하는 명령어
 @bot.command()
-async def add(ctx, left: int, right: int):
-    """Adds two numbers together."""
-    await ctx.send(left + right)
+async def add(ctx, left, right):
+    """두 숫자를 더합니다. 사용법: !add <숫자1> <숫자2>"""
+    try:
+        left_num = int(left)
+        right_num = int(right)
+        await ctx.send(f"{left_num} + {right_num} = {left_num + right_num}")
+    except ValueError:
+        await ctx.send("올바른 숫자를 입력해주세요! 예: `!add 10 20`")
 # 주사위를 굴리는 명령어 (NdN 형식: N개의 N면체 주사위)
 @bot.command()
 async def roll(ctx, dice: str):
