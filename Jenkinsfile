@@ -75,7 +75,7 @@ pipeline {
                 }
             }
             steps {
-                withCredentials([string(credentialsId: 'docker-hub-password', variable: 'DOCKER_PASSWORD'), string(credentialsId: 'discord-bot-token', variable: 'BOT_TOKEN')]) {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD'), string(credentialsId: 'discord-bot-token', variable: 'BOT_TOKEN')]) {
                     sh '''
                         cd /workspace
                         
@@ -83,7 +83,7 @@ pipeline {
                         docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
                         
                         # Docker Hub에 로그인 및 푸시
-                        docker login -u ashcircle03 -p ${DOCKER_PASSWORD}
+                        docker login -u $DOCKER_USERNAME -p ${DOCKER_PASSWORD}
                         docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
                         
                         # 최신 태그도 함께 푸시
