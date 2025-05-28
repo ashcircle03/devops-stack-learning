@@ -4,6 +4,7 @@ from discord.ext import commands
 import random
 import datetime
 import pytz
+import time
 from prometheus_client import start_http_server, Counter, Gauge, Histogram
 
 # 프로메테우스 메트릭 정의

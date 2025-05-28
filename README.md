@@ -1,6 +1,6 @@
 # Discord Bot with CI/CD
 
-Discord 봇을 개발하고 Jenkins를 통해 CI/CD 파이프라인을 구축한 프로젝트입니다.
+Discord 봇을 개발하고 Jenkins와 Kubernetes를 통해 CI/CD 파이프라인을 구축한 프로젝트입니다. 기본 유틸리티 기능을 제공하는 심플한 디스코드 봇입니다.
 
 ## 프로젝트 구조
 
@@ -70,13 +70,22 @@ graph TD
   - 메시지 반복
   - 멤버 정보 확인
 
+
 ## 기술 스택
 
 - **언어**: Python 3.11
 - **프레임워크**: discord.py
 - **컨테이너화**: Docker
 - **CI/CD**: Jenkins
-- **오케스트레이션**: Kubernetes
+- **오케스트레이션**: Kubernetes (minikube)
+- **모니터링**: Prometheus, Grafana
+
+## 개발 환경
+
+- **기본 환경**: Ubuntu 24.04 LTS
+- **minikube**: 6GB RAM, 3 CPU 할당
+- **Docker**: 28.1.1
+- **Jenkins**: 최신 LTS 버전
 
 ## 설치 및 실행
 
@@ -118,16 +127,32 @@ docker run -e BOT_TOKEN='your_discord_bot_token' discord-bot
 
 3. 모니터링 설정 배포:
    ```bash
-   kubectl apply -f k8s/monitoring/
+   # 프로메테우스 배포
+   kubectl apply -f k8s/monitoring/prometheus-*.yaml
+   kubectl apply -f k8s/monitoring/kube-state-metrics-*.yaml
+   kubectl apply -f k8s/monitoring/node-exporter-daemonset.yaml
+   
+   # 그라파나 배포
+   kubectl apply -f k8s/monitoring/grafana-*.yaml
    ```
+
+4. 그라파나 접속:
+   ```bash
+   # 그라파나 URL 확인
+   minikube service grafana --url
+   ```
+   - 기본 로그인: admin / admin (처음 로그인 후 변경 가능)
+   - 프로메테우스 데이터 소스 추가: http://prometheus:9090
 
 ## CI/CD 파이프라인
 
 Jenkins 파이프라인은 다음 단계로 구성됩니다:
 
-1. 코드 체크아웃
-2. Docker 이미지 빌드 및 푸시
-3. Kubernetes 배포
+1. 코드 체크아웃 - GitHub 저장소에서 소스코드 가져오기
+2. 테스트 실행 - Python 테스트 케이스 실행
+3. Docker 이미지 빌드 및 푸시 - 봇 이미지를 Docker Hub에 업로드
+4. 배포 매니페스트 업데이트 - 최신 이미지 태그로 업데이트
+5. Kubernetes 배포 - 미니쿼브 클러스터에 배포
 
 ## 명령어 목록
 
