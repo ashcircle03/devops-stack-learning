@@ -75,30 +75,25 @@ pipeline {
                 }
             }
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub',
-                        usernameVariable: 'DOCKER_USERNAME',
-                        passwordVariable: 'DOCKER_PASSWORD'
-                    ),
-                    string(
-                        credentialsId: 'discord-bot-token',
-                        variable: 'BOT_TOKEN'
-                    )
-                ]) {
-                sh '''
+                withCredentials([string(credentialsId: 'docker-hub-password', variable: 'DOCKER_PASSWORD'), string(credentialsId: 'discord-bot-token', variable: 'BOT_TOKEN')]) {
+                    sh '''
                         cd /workspace
-                        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-                        # GitHub 저장소에서는 Dockerfile이 루트 디렉토리에 있을 수 있음
-                        if [ -f "docker/Dockerfile" ]; then
-                          docker build --no-cache -t ${DOCKER_IMAGE}:${DOCKER_TAG} --build-arg BOT_TOKEN=$BOT_TOKEN -f docker/Dockerfile .
-                        else
-                          docker build --no-cache -t ${DOCKER_IMAGE}:${DOCKER_TAG} --build-arg BOT_TOKEN=$BOT_TOKEN .
-                        fi
+                        
+                        # Docker 이미지 빌드 및 푸시
+                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                        
+                        # Docker Hub에 로그인 및 푸시
+                        docker login -u ashcircle03 -p ${DOCKER_PASSWORD}
                         docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        
+                        # 최신 태그도 함께 푸시
+                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+                        docker push ${DOCKER_IMAGE}:latest
+                        
+                        # 정리
                         docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG}
-                    docker logout
-                '''
+                        docker logout
+                    '''
                 }
             }
         }
