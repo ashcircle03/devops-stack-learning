@@ -110,13 +110,7 @@ pipeline {
         }
         
         stage('Update Deployment Manifest') {
-            agent {
-                docker {
-                    image 'alpine:3.14'
-                    reuseNode true
-                    args '-v \${WORKSPACE}:/workspace'
-                }
-            }
+            agent any
             steps {
                 sh '''
                     # 전체 파일 목록 확인
