@@ -154,7 +154,7 @@ pipeline {
                     spec:
                       containers:
                       - name: kubectl
-                        image: alpine/k8s:1.20.7
+                        image: busybox:latest
                         command:
                         - cat
                         tty: true
