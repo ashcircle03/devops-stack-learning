@@ -26,6 +26,31 @@ pipeline {
             }
         }
 
+        stage('Run Tests') {
+            steps {
+                sh '''
+                    echo "디스코드 봇 테스트 실행 중..."
+                    
+                    # 파이썬 테스트 환경 설정
+                    python3 -m pip install pytest pytest-asyncio
+                    
+                    # 의존성 설치
+                    if [ -f "src/requirements.txt" ]; then
+                        python3 -m pip install -r src/requirements.txt
+                    elif [ -f "requirements.txt" ]; then
+                        python3 -m pip install -r requirements.txt
+                    fi
+                    
+                    # 테스트 실행
+                    if [ -f "src/test_discord_bot.py" ]; then
+                        cd src && python3 -m pytest test_discord_bot.py -v
+                    elif [ -f "test_discord_bot.py" ]; then
+                        python3 -m pytest test_discord_bot.py -v
+                    fi
+                '''
+            }
+        }
+
         stage('Build and Push Docker Image') {
             steps {
                 withCredentials([
