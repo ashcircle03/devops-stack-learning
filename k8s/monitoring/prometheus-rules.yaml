@@ -1,0 +1,18 @@
+# prometheus-rules.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: discord-bot-rules
+  namespace: monitoring
+spec:
+  groups:
+  - name: discord-bot
+    rules:
+    - alert: DiscordBotErrorRateHigh
+      expr: rate(discord_bot_errors_total[5m]) > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "High error rate in Discord Bot"
+        description: "Error rate is {{ $value }} per second"

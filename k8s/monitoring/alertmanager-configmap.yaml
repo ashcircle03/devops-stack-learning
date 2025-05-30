@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: monitoring
+  labels:
+    app: alertmanager
+data:
+  alertmanager.yml: |
+    global:
+      slack_api_url: 'https://hooks.slack.com/services/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'
+    
+    route:
+      receiver: 'default'
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 5m
+      repeat_interval: 12h
+      routes:
+      - match:
+          alertname: DiscordBotHighErrorRate
+        receiver: 'discord-bot-critical'
+        repeat_interval: 30m
+      - match:
+          alertname: DiscordBotNoHeartbeat
+        receiver: 'discord-bot-warning'
+        repeat_interval: 1h
+      - match:
+          alertname: DiscordBotDown
+        receiver: 'discord-bot-critical'
+        repeat_interval: 15m
+    
+    receivers:
+    - name: 'default'
+      slack_configs:
+      - channel: '#discord-bot-logs'
+        send_resolved: true
+        username: "Discord Bot Monitor"
+        icon_emoji: ":robot_face:"
+        title: "{{ .GroupLabels.alertname }} - {{ .Status | toUpper }}"
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Severity:* {{ .Labels.severity }}
+          *Description:* {{ .Annotations.description }}
+          *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ end }}
+
+    - name: 'discord-bot-critical'
+      slack_configs:
+      - channel: '#discord-bot-alerts'
+        send_resolved: true
+        username: "Discord Bot Critical Alert"
+        icon_emoji: ":rotating_light:"
+        color: 'danger'
+        title: "🚨 CRITICAL: {{ .GroupLabels.alertname }}"
+        text: |
+          {{ range .Alerts }}
+          *Summary:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Error Rate:* {{ .Labels.value | default "N/A" }}
+          *Started:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+
+    - name: 'discord-bot-warning'
+      slack_configs:
+      - channel: '#discord-bot-logs'
+        send_resolved: true
+        username: "Discord Bot Warning"
+        icon_emoji: ":warning:"
+        color: 'warning'
+        title: "⚠️ WARNING: {{ .GroupLabels.alertname }}"
+        text: |
+          {{ range .Alerts }}
+          *Summary:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Started:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ end }}

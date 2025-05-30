@@ -8,21 +8,97 @@ data:
     global:
       scrape_interval: 15s
       evaluation_interval: 15s
-
+    
+    rule_files:
+    - /etc/prometheus/rules/*.yaml
+    
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets:
+          - alertmanager:9093
+    
     scrape_configs:
-      - job_name: 'discord-bot'
-        kubernetes_sd_configs:
-          - role: pod
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-            action: keep
-            regex: true
-          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
-            action: replace
-            target_label: __metrics_path__
-            regex: (.+)
-          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
-            action: replace
-            regex: ([^:]+)(?::\d+)?;(\d+)
-            replacement: $1:$2
-            target_label: __address__ 
+    - job_name: 'discord-bot'
+      static_configs:
+      - targets: ['discord-bot:8000']
+      metrics_path: '/metrics'
+      scrape_interval: 30s
+      scrape_timeout: 10s
+      
+    - job_name: 'kubernetes-pods'
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+
+  discord-bot-rules.yaml: |
+    groups:
+    - name: discord-bot-alerts
+      rules:
+      # 높은 에러율 알림
+      - alert: DiscordBotHighErrorRate
+        expr: rate(discord_bot_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          service: discord-bot
+        annotations:
+          summary: "Discord Bot experiencing high error rate"
+          description: "Error rate is {{ $value | humanizePercentage }} errors per second over the last 5 minutes"
+          runbook_url: "https://wiki.company.com/discord-bot-troubleshooting"
+
+      # 하트비트 누락 알림
+      - alert: DiscordBotNoHeartbeat
+        expr: time() - discord_bot_heartbeat_timestamp_seconds > 120
+        for: 1m
+        labels:
+          severity: warning
+          service: discord-bot
+        annotations:
+          summary: "Discord Bot heartbeat missing"
+          description: "No heartbeat received from Discord Bot for more than 2 minutes. Last heartbeat: {{ $value | humanizeDuration }} ago"
+
+      # 봇 다운 알림
+      - alert: DiscordBotDown
+        expr: up{job="discord-bot"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: discord-bot
+        annotations:
+          summary: "Discord Bot is down"
+          description: "Discord Bot has been down for more than 1 minute"
+
+      # 높은 레이턴시 알림
+      - alert: DiscordBotHighLatency
+        expr: histogram_quantile(0.95, rate(discord_bot_message_latency_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: discord-bot
+        annotations:
+          summary: "Discord Bot high message latency"
+          description: "95th percentile latency is {{ $value | humanizeDuration }}"
+
+      # 메모리 사용량 높음
+      - alert: DiscordBotHighMemoryUsage
+        expr: (container_memory_usage_bytes{pod=~"discord-bot.*"} / container_spec_memory_limit_bytes{pod=~"discord-bot.*"}) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: discord-bot
+        annotations:
+          summary: "Discord Bot high memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }} of the limit"
