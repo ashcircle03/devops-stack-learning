@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-templates
+  namespace: monitoring
+data:
+  discord-bot.tmpl: |
+    {{ define "discord-bot.title" }}
+    {{ if eq .Status "firing" }}🔥 FIRING{{ else }}✅ RESOLVED{{ end }} - {{ .GroupLabels.alertname }}
+    {{ end }}
+
+    {{ define "discord-bot.text" }}
+    {{ range .Alerts }}
+    *Alert:* {{ .Annotations.summary }}
+    *Severity:* {{ .Labels.severity | toUpper }}
+    *Service:* {{ .Labels.service }}
+    *Description:* {{ .Annotations.description }}
+    {{ if .Labels.instance }}*Instance:* {{ .Labels.instance }}{{ end }}
+    *Started:* {{ .StartsAt.Format "2006-01-02 15:04:05 UTC" }}
+    {{ if ne .Status "firing" }}*Ended:* {{ .EndsAt.Format "2006-01-02 15:04:05 UTC" }}{{ end }}
+    {{ if .Annotations.runbook_url }}
+    *Runbook:* {{ .Annotations.runbook_url }}
+    {{ end }}
+    ---
+    {{ end }}
+    {{ end }}

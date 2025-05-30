@@ -1,0 +1,25 @@
+# 파이썬 캐시 파일
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 가상환경
+venv/
+env/
+.env
+
+# 로그 파일
+*.log
+
+# 민감한 정보가 포함된 파일
+k8s/kubeconfig
+k8s/monitoring/slack-secret.yaml
+
+# IDE 설정
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker 관련
+.docker/

@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: monitoring
+data:
+  discord-bot-rules.yaml: |
+    groups:
+    - name: discord-bot-alerts
+      rules:
+      - alert: DiscordBotHighErrors
+        expr: discord_bot_errors_total > 5
+        for: 30s
+        labels:
+          severity: critical
+          service: discord-bot
+        annotations:
+          summary: "Discord Bot high error count"
+          description: "Error count is {{ $value }}"
+          
+      - alert: DiscordBotDown
+        expr: up{job="discord-bot"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: discord-bot
+        annotations:
+          summary: "Discord Bot is down"
+          description: "Discord Bot has been down for more than 1 minute"
