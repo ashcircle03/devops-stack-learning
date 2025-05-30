@@ -13,7 +13,7 @@ env/
 
 # 민감한 정보가 포함된 파일
 k8s/kubeconfig
-k8s/app/slack-secret.yaml
+k8s/monitoring/slack-secret.yaml
 
 # IDE 설정
 .idea/
