@@ -8,7 +8,7 @@ metadata:
 data:
   alertmanager.yml: |
     global:
-      slack_api_url: 'https://hooks.slack.com/services/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'
+      slack_api_url_file: '/etc/slack-secrets/webhook-url'
     
     route:
       receiver: 'default'
