@@ -8,7 +8,7 @@ metadata:
 data:
   alertmanager.yml: |
     global:
-      slack_api_url: 'https://hooks.slack.com/services/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'
+      slack_api_url: 'https://hooks.slack.com/services/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'
     
     route:
       receiver: 'default'
@@ -17,6 +17,10 @@ data:
       group_interval: 5m
       repeat_interval: 12h
       routes:
+      - match:
+          alertname: DiscordBotHighErrors
+        receiver: 'discord-bot-critical'
+        repeat_interval: 30m
       - match:
           alertname: DiscordBotHighErrorRate
         receiver: 'discord-bot-critical'
@@ -33,7 +37,7 @@ data:
     receivers:
     - name: 'default'
       slack_configs:
-      - channel: '#discord-bot-logs'
+      - channel: 'C08QCUMR0GL'
         send_resolved: true
         username: "Discord Bot Monitor"
         icon_emoji: ":robot_face:"
@@ -48,24 +52,22 @@ data:
 
     - name: 'discord-bot-critical'
       slack_configs:
-      - channel: '#discord-bot-alerts'
+      - channel: 'C08QCUMR0GL'
         send_resolved: true
-        username: "Discord Bot Critical Alert"
-        icon_emoji: ":rotating_light:"
+        username: "Discord Bot Alert"
+        icon_emoji: ":robot_face:"
         color: 'danger'
-        title: "🚨 CRITICAL: {{ .GroupLabels.alertname }}"
+        title: "🚨 Discord Bot Alert: {{ .GroupLabels.alertname }}"
         text: |
           {{ range .Alerts }}
           *Summary:* {{ .Annotations.summary }}
           *Description:* {{ .Annotations.description }}
-          *Error Rate:* {{ .Labels.value | default "N/A" }}
           *Started:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
           {{ end }}
 
     - name: 'discord-bot-warning'
       slack_configs:
-      - channel: '#discord-bot-logs'
+      - channel: 'C08QCUMR0GL'
         send_resolved: true
         username: "Discord Bot Warning"
         icon_emoji: ":warning:"

@@ -5,13 +5,14 @@ metadata:
   namespace: monitoring
   labels:
     app: grafana
+    grafana_dashboard: "1"
 data:
   dashboards.yaml: |
     apiVersion: 1
     providers:
     - name: 'default'
       orgId: 1
-      folder: ''
+      folder: 'Discord Bot'
       type: file
       disableDeletion: false
       editable: true

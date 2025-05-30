@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: discord-bot
-        image: ashcircle03/discord-bot:latest
+        image: ashcircle03/discord-bot:114-test
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
