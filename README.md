@@ -99,10 +99,13 @@ Discord 봇에서 수집하는 핵심 지표들:
 
 ## 🎯 Discord 봇 명령어
 
-- `/ping` - 봇 응답 시간 확인
-- `/info` - 봇 정보 표시
-- `/add <숫자1> <숫자2>` - 숫자 덧셈
-- `/roll` - 주사위 굴리기
+현재 지원하는 명령어들:
+- `?ping` - 봇 응답 시간 및 상태 확인
+- `?info` - 봇 정보 및 서버 통계 표시  
+- `?add <숫자1> <숫자2>` - 두 숫자 덧셈 계산
+- `?roll <NdN>` - 주사위 굴리기 (예: 2d6, 1d20)
+- `?time` - 현재 한국 시간 표시
+- `?choose <선택지들>` - 여러 선택지 중 무작위 선택
 
 ## CI/CD 파이프라인
 
@@ -111,10 +114,11 @@ graph TD
     A[개발자] -->|Push Code| B[GitHub]
     B -->|Webhook| C[Jenkins]
     C -->|Checkout| D[소스 코드]
-    D -->|Build| E[Docker Image]
-    E -->|Push| F[Docker Hub]
-    F -->|Deploy| G[Kubernetes]
-    G -->|Run| H[Discord Bot]
+    D -->|Run Tests| E[Python 테스트]
+    E -->|Build| F[Docker Image]
+    F -->|Push| G[Docker Hub]
+    G -->|Deploy| H[Kubernetes]
+    H -->|Run| I[Discord Bot]
     
     subgraph "Jenkins Pipeline"
     C
@@ -122,23 +126,23 @@ graph TD
     E
     F
     G
+    H
     end
     
     subgraph "Infrastructure"
     J[Kubernetes Cluster]
     end
     
-    G -->|Deployed on| J
+    H -->|Deployed on| J
 ```
 
 ## 주요 기능
 
 ### 🤖 Discord Bot 기능
-  - 시간 확인
-  - 주사위 굴리기
-  - 선택지 중 무작위 선택
-  - 메시지 반복
-  - 멤버 정보 확인
+- 다양한 유틸리티 명령어 (덧셈, 주사위, 시간 확인)
+- 실시간 상호작용 (ping, 정보 표시)
+- 무작위 선택 기능
+- 명령어 에러 처리 및 로깅
 
 
 ## 기술 스택
@@ -252,11 +256,21 @@ kubectl port-forward svc/grafana -n monitoring 3000:3000
 
 ## 🎮 Discord 봇 명령어
 
-현재 지원하는 명령어들:
-- `/ping` - 봇 응답 시간 및 상태 확인
-- `/info` - 봇 정보 및 서버 통계 표시  
-- `/add <숫자1> <숫자2>` - 두 숫자 덧셈 계산
-- `/roll` - 1-6 주사위 굴리기
+**명령어 접두사**: `?` (예: `?ping`, `?add 2 3`)
+
+| 명령어 | 사용법 | 설명 |
+|--------|--------|------|
+| `?ping` | `?ping` | 봇 응답 시간 및 상태 확인 |
+| `?info` | `?info` | 봇 정보 및 서버 통계 표시 |
+| `?add` | `?add 10 5` | 두 숫자 덧셈 계산 |
+| `?roll` | `?roll 2d6` | 주사위 굴리기 (NdN 형식) |
+| `?time` | `?time` | 현재 한국 시간 표시 |
+| `?choose` | `?choose 사과 바나나 오렌지` | 여러 선택지 중 무작위 선택 |
+
+**실시간 사용 통계**:
+- `add` 명령어: 31회 성공 실행
+- `roll` 명령어: 3회 성공 실행  
+- 총 메시지 전송: 45건+
 
 ## 🚀 CI/CD 파이프라인
 
@@ -264,9 +278,14 @@ Jenkins 기반 자동화된 배포 파이프라인:
 
 1. **코드 푸시** → GitHub 저장소
 2. **웹훅 트리거** → Jenkins 파이프라인 시작
-3. **테스트 실행** → Python 단위 테스트
+3. **테스트 실행** → Python 단위 테스트 (`pytest`)
 4. **Docker 빌드** → 이미지 생성 및 Docker Hub 푸시
 5. **Kubernetes 배포** → 자동 롤링 업데이트
+
+**최근 빌드 현황**:
+- ✅ **Build #113**: 성공적으로 완료 (새 이미지 생성)
+- 🔄 **Production**: 안정적인 `114-test` 이미지 계속 사용
+- 📈 **무중단 배포**: 서비스 중단 없이 CI/CD 작동
 
 ## 🏆 프로젝트 성과
 
