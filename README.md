@@ -2,6 +2,7 @@
 
 한 학기 동안 집에서 Ubuntu를 설치하고 DevOps 도구들을 하나씩 익혀나간 기록입니다. 
 
+
 전체 과정은 블로그에 정리했습니다: [velog.io/@ashcircle03/series/리눅스](https://velog.io/@ashcircle03/series/%EB%A6%AC%EB%88%85%EC%8A%A4)
 
 ## 뭘 배웠나?
@@ -221,32 +222,43 @@ graph TB
     class DISCORD,SLACK external
 ```
 
-### 🔗 주요 연결점
+### 주요 연결점
 - **Jenkins** → Docker Hub → Kubernetes (자동 배포)
 - **Discord/Slack Bot** → Prometheus (메트릭 수집)
 - **Prometheus** → Grafana (시각화) + AlertManager (알림)
 - **AlertManager** → Slack (에러 알림)
 
-### 🌐 접속 주소
+### 접속 주소
 - **Prometheus**: http://localhost:30090
 - **Grafana**: http://localhost:30300 (admin/admin)
 - **Slack Bot Test**: http://localhost:30500
 - **AlertManager**: `kubectl port-forward` 후 http://localhost:9093
 
 ## 현재 상황
-[jenkins](/images/jenkins.png)
+
+### 🔧 Jenkins CI/CD
+![Jenkins Dashboard](images/jenkins.png)
+
 Jenkins Build #117까지 성공했긴 한데, 사실 젠킨스를 재설치 한거라 이전에 +50번 시도 더해야되요.
 
-[discord](/images/discordbot.png)
+### 🤖 Discord Bot
+![Discord Bot](images/discordbot.png)
+
 스스로 add 명령어 31번, roll 명령어 3번 써보면서 기능 확인했네요. 
 
-[prometheus](/images/prometheus.png)
+### 📊 Prometheus
+![Prometheus](images/prometheus.png)
+
 Prometheus 쿼리문을 통해 모니터링도 해보고
 
-[grafana](/images/grafana.png)
+### 📈 Grafana Dashboard
+![Grafana](images/grafana.png)
+
 Grafana로 예쁜 대시보드도 봤답니다.
 실시간으로 메트릭이 변하는 걸 보니까 뭔가 전문가가 된 기분입니다.
 
-[alertmanager](/images/slackbot.png)
+### 🚨 AlertManager & Slack
+![Slack Bot](images/slackbot.png)
+
 슬랙 봇을 만들고 Alertmanager를 이용해서 디코봇 에러도 30분 마다 올 수 있게 했습니다.
 
