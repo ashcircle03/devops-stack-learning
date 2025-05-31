@@ -27,3 +27,13 @@ data:
         annotations:
           summary: "Discord Bot is down"
           description: "Discord Bot has been down for more than 1 minute"
+          
+      - alert: DiscordBotTestAlert
+        expr: discord_bot_commands_total > 0
+        for: 5s
+        labels:
+          severity: info
+          service: discord-bot
+        annotations:
+          summary: "Discord Bot test alert"
+          description: "Test alert - Bot has processed {{ $value }} commands"

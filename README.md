@@ -2,7 +2,7 @@
 
 한 학기 동안 집에서 Ubuntu를 설치하고 DevOps 도구들을 하나씩 익혀나간 기록입니다. 
 
-📝 전체 과정은 블로그에 정리했습니다: [velog.io/@ashcircle03/series/리눅스](https://velog.io/@ashcircle03/series/%EB%A6%AC%EB%88%85%EC%8A%A4)
+전체 과정은 블로그에 정리했습니다: [velog.io/@ashcircle03/series/리눅스](https://velog.io/@ashcircle03/series/%EB%A6%AC%EB%88%85%EC%8A%A4)
 
 ## 뭘 배웠나?
 
@@ -31,6 +31,8 @@
 | 9 | Discord.py | 봇 개발 |
 | 10 | Prometheus | 모니터링 |
 | 11 | Grafana | 대시보드 | 
+| 12 | Alertmanager | 알림 | 
+
 
 ## 지금 뭐가 돌고 있나
 
@@ -42,7 +44,7 @@
 - Slack 알림도 제대로 옴
 - 지금까지 45개 메시지 처리함
 
-근데 솔직히 Discord 봇은 별로 쓸모없는 기능만 있어요:
+근데 Discord 봇은 쓸모없는 기능만 있답니다:
 - `?ping` - 응답 속도 재기
 - `?add 1 2` - 덧셈 (계산기 쓰는게 나음)
 - `?roll 2d6` - 주사위 굴리기
@@ -78,8 +80,6 @@ project1/
 
 ## 어떻게 돌려보나
 
-현재 모든게 돌아가고 있으니까 그냥 확인만 해보세요:
-
 ```bash
 # 봇 상태 확인
 kubectl get pods -l app=discord-bot
@@ -92,7 +92,7 @@ kubectl get pods -l app=discord-bot
 ./test-monitoring.sh
 ```
 
-## 📊 주요 메트릭
+## 주요 메트릭
 
 Discord 봇에서 수집하는 핵심 지표들:
 - `discord_bot_commands_total` - 명령어 실행 통계
@@ -101,7 +101,7 @@ Discord 봇에서 수집하는 핵심 지표들:
 - `discord_bot_heartbeat_timestamp` - 봇 상태 확인
 - `discord_bot_message_latency_seconds` - 응답 시간
 
-## 🎯 Discord 봇 명령어
+## Discord 봇 명령어
 
 현재 지원하는 명령어들:
 - `?ping` - 봇 응답 시간 및 상태 확인
@@ -161,8 +161,8 @@ graph TD
 
 ## 현재 상황
 
-Jenkins Build #116까지 성공했고, 새 저장소로 이전한 후에도 자동 빌드가 잘 돌아가고 있습니다.
-add 명령어 31번, roll 명령어 3번 써봤는데 별로 재미는 없어요.
+Jenkins Build #116까지 성공했긴 한데, 사실 젠킨스를 재설치 한거라 이전에 +50번 시도 더해야되요.
+스스로 add 명령어 31번, roll 명령어 3번 써보면서 기능 확인했네요. 
 
 근데 모니터링 대시보드 보는 건 좀 재밌네요. 
 실시간으로 메트릭이 변하는 걸 보니까 뭔가 프로가 된 기분입니다.
