@@ -157,24 +157,18 @@ graph TD
 - 자동화가 얼마나 편한지 알게 됨
 - 문제 생겼을 때 로그 보는 습관 생김
 
-솔직히 처음엔 그냥 "리눅스 써보자" 였는데 어쩌다 보니 DevOps 스택을 다 만져본 셈이네요.
+솔직히 처음엔 그냥 "리눅스 써보자" 였는데 어쩌다 보니 DevOps 스택을 거의 다 만져본 셈이네요.
 
 ## 현재 상황
-
-Jenkins Build #116까지 성공했긴 한데, 사실 젠킨스를 재설치 한거라 이전에 +50번 시도 더해야되요.
+[jenkins](/images/jenkins.png)
+Jenkins Build #117까지 성공했긴 한데, 사실 젠킨스를 재설치 한거라 이전에 +50번 시도 더해야되요.
+[discord](/images/discordbot.png)
 스스로 add 명령어 31번, roll 명령어 3번 써보면서 기능 확인했네요. 
-
-근데 모니터링 대시보드 보는 건 좀 재밌네요. 
-실시간으로 메트릭이 변하는 걸 보니까 뭔가 프로가 된 기분입니다.
-
-## 마무리
-
-한 학기 동안 Linux 써보면서 생각보다 많은 걸 배웠네요.
-처음엔 무서웠는데 이제는 Terminal이 더 편한 것 같아요.
-
-중간에 막히는 부분 많을 텐데 그냥 구글링하면 됩니다.
-
----
-
-*Ubuntu 설치부터 Kubernetes 클러스터까지*
+[prometheus](/images/prometheus.png)
+Prometheus 쿼리문을 통해 모니터링도 해보고
+[grafana](/images/grafana.png)
+Grafana로 예쁜 대시보드도 봤답니다.
+실시간으로 메트릭이 변하는 걸 보니까 뭔가 전문가가 된 기분입니다.
+[alertmanager](/images/slackbot.png)
+슬랙 봇을 만들고 Alertmanager를 이용해서 디코봇 에러도 30분 마다 올 수 있게 했습니다.
 
