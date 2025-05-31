@@ -38,17 +38,15 @@
 
 다 만들어놓고 보니 생각보다 잘 돌아가고 있습니다.
 
-- Discord 봇이 6시간째 안 죽고 돌아감 (기적)
+- Discord 봇이 안 죽고 돌아감
 - Prometheus가 30초마다 44개 메트릭 수집 중
 - Grafana 대시보드도 한글로 잘 나옴
 - Slack 알림도 제대로 옴
 - 지금까지 45개 메시지 처리함
 
-<<<<<<< HEAD
-근데 Discord 봇은 쓸모없는 기능만 있답니다:
-=======
+
 Discord 봇은 그냥 이상한 기능만 넣어뒀어요. :
->>>>>>> 0bf849bba89e1564402fde9f6c6808707696f687
+
 - `?ping` - 응답 속도 재기
 - `?add 1 2` - 덧셈 (계산기 쓰는게 나음)
 - `?roll 2d6` - 주사위 굴리기
@@ -64,22 +62,30 @@ Discord 봇은 그냥 이상한 기능만 넣어뒀어요. :
 project1/
 ├── src/                    # Python 코드들
 │   ├── discord_bot.py      # 메인 봇 코드
+│   ├── slack_bot.py        # Slack 봇 코드
 │   ├── requirements.txt    # 필요한 패키지들
 │   └── test_discord_bot.py # 테스트 (잘 안 씀)
 │
 ├── docker/                 # Docker 설정
-│   ├── Dockerfile          # 봇용 이미지
+│   ├── Dockerfile          # Discord 봇용 이미지
+│   ├── Dockerfile.slack    # Slack 봇용 이미지
 │   └── docker-compose.yml  # 로컬 테스트용
 │
 ├── k8s/                    # Kubernetes 설정 파일들
-│   ├── app/                # 봇 배포 설정
+│   ├── app/                # Discord 봇 배포 설정
 │   └── monitoring/         # 모니터링 스택
-│       ├── prometheus/     # 메트릭 수집
-│       ├── grafana/        # 대시보드
-│       └── alertmanager/   # 알림
+│       ├── prometheus/     # 메트릭 수집 설정
+│       ├── grafana/        # 대시보드 설정
+│       ├── alertmanager/   # 알림 설정
+│       ├── slack-bot/      # Slack 봇 설정
+│       ├── dashboards/     # Grafana 대시보드 JSON
+│       └── rbac/           # 권한 설정
 │
-├── docs/                   # 문서들
-└── ci/                     # Jenkins 설정
+├── ci/                     # Jenkins CI/CD 설정
+├── images/                 # 스크린샷 및 이미지들
+├── requirements.txt        # 프로젝트 의존성
+├── Jenkinsfile             # Jenkins 파이프라인
+└── 느낀점.md               # 프로젝트 회고
 ```
 
 ## 어떻게 돌려보나
@@ -120,28 +126,45 @@ Discord 봇에서 수집하는 핵심 지표들:
 ```mermaid
 graph TD
     A[개발자] -->|Push Code| B[GitHub]
-    B -->|Webhook| C[Jenkins]
-    C -->|Checkout| D[소스 코드]
-    D -->|Run Tests| E[Python 테스트]
-    E -->|Build| F[Docker Image]
-    F -->|Push| G[Docker Hub]
-    G -->|Deploy| H[Kubernetes]
-    H -->|Run| I[Discord Bot]
+    B -->|Webhook| C[Jenkins Pipeline]
     
-    subgraph "Jenkins Pipeline"
-    C
-    D
-    E
-    F
-    G
-    H
+    C --> D[Checkout 소스 코드]
+    D --> E[Setup Environment]
+    E --> F[Python 테스트 실행]
+    F --> G[Docker 이미지 빌드]
+    G --> H[Docker Hub에 푸시]
+    H --> I[Kubernetes 매니페스트 업데이트]
+    I --> J[Kubernetes 배포]
+    J --> K[배포 상태 확인]
+    
+    subgraph "Jenkins Stages"
+        D
+        E
+        F
+        G
+        H
+        I
+        J
+        K
     end
     
-    subgraph "Infrastructure"
-    J[Kubernetes Cluster]
+    subgraph "External Services"
+        L[Docker Hub Registry]
+        M[Kubernetes Cluster]
+        N[Discord Bot Running]
     end
     
-    H -->|Deployed on| J
+    G -->|Push Image| L
+    J -->|Deploy to| M
+    M -->|Run Pod| N
+    
+    subgraph "Docker Agents"
+        O[python:3.9]
+        P[docker:20.10]
+    end
+    
+    F -.->|Uses| O
+    G -.->|Uses| P
 ```
 
 ## 뭘 배운 건가
@@ -163,16 +186,67 @@ graph TD
 
 솔직히 처음엔 그냥 "리눅스 써보자" 였는데 어쩌다 보니 DevOps 스택을 거의 다 만져본 셈이네요.
 
+## 🏗️ 전체 시스템 아키텍처
+
+전체 연결 구조를 한눈에 보려면 → [📊 상세 시스템 다이어그램](./system-architecture-diagram.md)
+
+```mermaid
+graph TB
+    subgraph "CI/CD"
+        GITHUB[GitHub 📁] --> JENKINS[Jenkins 🔧]
+        JENKINS --> DOCKERHUB[Docker Hub 📦]
+    end
+    
+    subgraph "Kubernetes Cluster"
+        DOCKERHUB --> DISCORDBOT[Discord Bot 🤖]
+        DOCKERHUB --> SLACKBOT[Slack Bot 💬]
+        
+        DISCORDBOT -->|메트릭| PROMETHEUS[Prometheus 📊]
+        SLACKBOT -->|메트릭| PROMETHEUS
+        PROMETHEUS --> GRAFANA[Grafana 📈]
+        PROMETHEUS -->|알람| ALERTMANAGER[AlertManager 🚨]
+    end
+    
+    subgraph "External APIs"
+        DISCORDBOT --> DISCORD[Discord API 💬]
+        ALERTMANAGER --> SLACK[Slack API 📢]
+    end
+    
+    classDef cicd fill:#f3e5f5
+    classDef k8s fill:#e8f5e8
+    classDef external fill:#fff3e0
+    
+    class GITHUB,JENKINS,DOCKERHUB cicd
+    class DISCORDBOT,SLACKBOT,PROMETHEUS,GRAFANA,ALERTMANAGER k8s
+    class DISCORD,SLACK external
+```
+
+### 🔗 주요 연결점
+- **Jenkins** → Docker Hub → Kubernetes (자동 배포)
+- **Discord/Slack Bot** → Prometheus (메트릭 수집)
+- **Prometheus** → Grafana (시각화) + AlertManager (알림)
+- **AlertManager** → Slack (에러 알림)
+
+### 🌐 접속 주소
+- **Prometheus**: http://localhost:30090
+- **Grafana**: http://localhost:30300 (admin/admin)
+- **Slack Bot Test**: http://localhost:30500
+- **AlertManager**: `kubectl port-forward` 후 http://localhost:9093
+
 ## 현재 상황
 [jenkins](/images/jenkins.png)
 Jenkins Build #117까지 성공했긴 한데, 사실 젠킨스를 재설치 한거라 이전에 +50번 시도 더해야되요.
+
 [discord](/images/discordbot.png)
 스스로 add 명령어 31번, roll 명령어 3번 써보면서 기능 확인했네요. 
+
 [prometheus](/images/prometheus.png)
 Prometheus 쿼리문을 통해 모니터링도 해보고
+
 [grafana](/images/grafana.png)
 Grafana로 예쁜 대시보드도 봤답니다.
 실시간으로 메트릭이 변하는 걸 보니까 뭔가 전문가가 된 기분입니다.
+
 [alertmanager](/images/slackbot.png)
 슬랙 봇을 만들고 Alertmanager를 이용해서 디코봇 에러도 30분 마다 올 수 있게 했습니다.
 
