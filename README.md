@@ -236,28 +236,49 @@ graph TB
 
 ## 현재 상황
 
-### 🔧 Jenkins CI/CD
+### Zsh
+![zsh](images/zsh.png)
+
+Zsh 쉘도 설치해봤고
+
+### Warp & Miniconda
+![miniconda](images/miniconda.png)
+
+miniconda로 가상환경도 만들어봤습니다.
+
+###  Discord Bot & VS Code
+![vsc](images/vsc.png)
+![Discord Bot](images/discordbot.png)
+
+스스로 add 명령어 31번, roll 명령어 3번 써보면서 기능 확인했네요.
+
+###  Docker
+![docker](images/docker.png)
+
+Docker 컨테이너에서 젠킨스를 동작시키게 했고
+
+###  Minikube
+![minikube](images/k8s.png)
+
+Kubernetes로 디코봇과 모니터링 서비스들을 배포했습니다.
+
+### Jenkins CI/CD
 ![Jenkins Dashboard](images/jenkins.png)
 
 Jenkins Build #117까지 성공했긴 한데, 사실 젠킨스를 재설치 한거라 이전에 +50번 시도 더해야되요.
 
-### 🤖 Discord Bot
-![Discord Bot](images/discordbot.png)
-
-스스로 add 명령어 31번, roll 명령어 3번 써보면서 기능 확인했네요. 
-
-### 📊 Prometheus
+### Prometheus
 ![Prometheus](images/prometheus.png)
 
 Prometheus 쿼리문을 통해 모니터링도 해보고
 
-### 📈 Grafana Dashboard
+### Grafana
 ![Grafana](images/grafana.png)
 
 Grafana로 예쁜 대시보드도 봤답니다.
 실시간으로 메트릭이 변하는 걸 보니까 뭔가 전문가가 된 기분입니다.
 
-### 🚨 AlertManager & Slack
+### AlertManager
 ![Slack Bot](images/slackbot.png)
 
 슬랙 봇을 만들고 Alertmanager를 이용해서 디코봇 에러도 30분 마다 올 수 있게 했습니다.
